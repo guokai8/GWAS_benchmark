@@ -1,21 +1,23 @@
-This is the python code used for the experiments in the SR-paper "Further Improvements to Linear Mixed Models for Genome-Wide Association Studies".
+This python code can be used to benchmark or evaluate GWAS algorithms.
+  
+If you use this code, please cite:
 
-If this is useful to you, please cite:
-C. Widmer, C. Lippert, O. Weissbrod, N. Fusi, C. Kadie, R. Davidson, J. Listgarten, and D. Heckerman. Further Improvements to Linear Mixed Models for Genome-Wide Association Studies.
+* C. Widmer, C. Lippert, O. Weissbrod, N. Fusi, C. Kadie, R. Davidson, J. Listgarten, and D. Heckerman, Further Improvements to Linear Mixed Models for Genome-Wide Association Studies, _Scientific Reports_ **4**, 6874, Nov 2014 (doi:10.1038/srep06874).
 
+This code contains the following modules:
 
-It contains the following modules:
-- semisynth_experiments: the core module for generating synthetic phenotypes based on real snps, running different methods for GWAS and evaluating them all within one pipeline
-- cluster_data: module to compute and visualize a hierarchical clustering of GWAS data to get an understanding of its structure (population structure, family structure)
-- split_data_helper: helper module for splitting SNPs by chromosome
+* semisynth_experiments: the core module for generating synthetic phenotypes based on real snps, running different methods for GWAS and evaluating them all within one pipeline
 
-For testing purposes a small data set is provided under (see the README file within that directory for the data license):
-data/mouse
+* cluster_data: module to compute and visualize a hierarchical clustering of GWAS data to get an understanding of its structure (population structure, family structure)
 
-An example run to compute T1 error on the mouse data using 10 causal SNPs can be executed by running: 
-python run_simulation.py
+* split_data_helper: helper module for splitting SNPs by chromosome
 
-We recommend running this example on a cluster computer as this simulation is computationally demanding. An example result plot (of T1-error) is provided in the results directory.
+For testing purposes a small data set is provided at `data/mouse` (see the `README` file within that directory for the data license).
 
-Further, we use the ipython-notebook to demonstrate some of the functionality of the hierarchical clustering module. To start ipython notebook type:
-ipython notebook
+An example run to compute type I error rate on the mouse data using 10 causal SNPs can be executed by running `python run_simulation.py`.
+
+We recommend running this example on a cluster computer as this simulation is computationally demanding. An example result plot (of type I error) is provided in the results directory.
+
+Further, we use the ipython-notebook to demonstrate some of the functionality of the hierarchical clustering module. 
+
+To start ipython notebook type `ipython notebook` at the command line.
