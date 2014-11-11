@@ -1,0 +1,50 @@
+
+@----------------------------------------------------------@
+|        PLINK!       |     v1.07      |   10/Aug/2009     |
+|----------------------------------------------------------|
+|  (C) 2009 Shaun Purcell, GNU General Public License, v2  |
+|----------------------------------------------------------|
+|  For documentation, citation & bug-report instructions:  |
+|        http://pngu.mgh.harvard.edu/purcell/plink/        |
+@----------------------------------------------------------@
+
+Web-based version check ( --noweb to skip )
+Recent cached web-check found... OK, v1.07 is current
+
+Writing this text to log file [ alldata.log ]
+Analysis started: Wed May 07 17:42:47 2014
+
+Options in effect:
+	--file chr1.build37
+	--merge-list genotype_list
+	--missing-genotype NA
+	--out alldata
+	--geno 0.1
+	--maf 0.05
+	--make-bed
+	--nonfounders
+
+1044 (of 1044) markers to be included from [ chr1.build37.map ]
+1940 individuals read from [ chr1.build37.ped ] 
+0 individuals with nonmissing phenotypes
+Assuming a disease phenotype (1=unaff, 2=aff, 0=miss)
+Missing phenotype value is also -9
+0 cases, 0 controls and 1940 missing
+993 males, 947 females, and 0 of unspecified sex
+Using merge mode 1 : consensus call (default)
+Merging 19 samples, final sample contains 1940 individuals and 12545 markers
+Before frequency and genotyping pruning, there are 12545 SNPs
+0 founders and 1940 non-founders found
+Total genotyping rate in remaining individuals is 0.995563
+202 SNPs failed missingness test ( GENO > 0.1 )
+2193 SNPs failed frequency test ( MAF < 0.05 )
+After frequency and genotyping pruning, there are 10150 SNPs
+After filtering, 0 cases, 0 controls and 1940 missing
+After filtering, 993 males, 947 females, and 0 of unspecified sex
+Writing pedigree information to [ alldata.fam ] 
+Writing map (extended format) information to [ alldata.bim ] 
+Writing genotype bitfile to [ alldata.bed ] 
+Using (default) SNP-major mode
+
+Analysis finished: Wed May 07 17:43:54 2014
+
