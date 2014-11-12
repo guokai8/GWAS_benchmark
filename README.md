@@ -18,6 +18,7 @@ An example run to compute type I error rate on the mouse data using 10 causal SN
 
 We recommend running this example on a cluster computer as this simulation is computationally demanding. An example result plot (of type I error) is provided in the results directory.
 
-Further, we use the ipython-notebook to demonstrate some of the functionality of the hierarchical clustering module. 
+Further, we use the ipython-notebook to demonstrate some of the functionality of the hierarchical clustering module: 
+http://nbviewer.ipython.org/github/MSRCompBio/GWAS_benchmark/blob/master/cluster_data.ipynb
 
-To start ipython notebook type `ipython notebook` at the command line.
+To start ipython notebook locally, type `ipython notebook` at the command line.
