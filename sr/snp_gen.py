@@ -65,7 +65,7 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move t
     # the default params are set in the init or not. It's just for safety
     # we override the important stuff anyway
     options.csnps_hidden = 0
-    options.h2 = .1  #!!!cmk needed?  #not rel
+    options.h2 = .5  #!!!cmk needed?  #not rel
     options.fracSibs = dfr
     options.csnps = 10 #!!!cmk what is this?  #not rel
     options.minFreq = maf_low
