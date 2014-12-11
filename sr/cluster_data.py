@@ -17,7 +17,6 @@ def cluster_data(snpreader):
     compute hierarchical clustering of snp data set in bed_fn
     """
 
-
     if isinstance(snpreader,str):
         snpreader = Bed(snpreader)
     G = snpreader.read().standardize().val

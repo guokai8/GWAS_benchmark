@@ -17,11 +17,9 @@ import time
 import fastlmm.association.gwas_eval as gw
 import pylab
 
-import fastlmm.util.standardizer as stdizer
-from fastlmm.pyplink.snpreader.Bed import Bed
 from fastlmm.util.pickle_io import save, load
 from fastlmm.association.LocoGwas import FastGwas
-from fastlmm.util.runner import Local, Hadoop2
+from fastlmm.util.runner import Local, Hadoop2, LocalMultiProc
 from fastlmm.util.util import argintersect_left
 from fastlmm.util import distributed_map
 from fastlmm.feature_selection.feature_selection_two_kernel import FeatureSelectionInSample
@@ -42,6 +40,8 @@ class LeaveTwoChrOutSimulation():
 
         #self.base_path = base_path
         self.snp_fn = snp_fn
+
+        from pysnptools.snpreader import Bed
         self.snp_reader = Bed(snp_fn)
         
         self.cache_dir =  "data/"
@@ -79,11 +79,7 @@ class LeaveTwoChrOutSimulation():
 
         if not os.path.isfile(self.eigen_fn) or self.force_recompute:
 
-            snp_reader = Bed(self.snp_fn)
-            standardizer = stdizer.Unit()
-            geno = snp_reader.read(order='C')
-            G = geno['snps']
-            G = standardizer.standardize(G)
+            G = self.snp_reader.read(order='C').standardize().val
             G.flags.writeable = False
             chr1_idx, chr2_idx, rest_idx = split_data_helper.split_chr1_chr2_rest(snp_reader.pos)
 
@@ -242,11 +238,9 @@ def compute_core(input_tuple):
         
         # load data
         ###################################################################
+        from pysnptools.snpreader import Bed
         snp_reader = Bed(snp_fn)
-        standardizer = stdizer.Unit()
-        geno = snp_reader.read(order='C')
-        G = geno['snps']
-        G = standardizer.standardize(G)
+        G = snp_reader.read(order='C').standardize().val
         G.flags.writeable = False
         
         # load pcs
@@ -350,14 +344,14 @@ def compute_core(input_tuple):
         # fs unconditioned
         ########################
         out_fn = "tmp_pheno_%i.txt" % (sim_id)
-        out_data = pd.DataFrame({"id1": geno["iid"][:,0], "id2": geno["iid"][:,1], "y": y})
+        out_data = pd.DataFrame({"id1": snp_reader.iid[:,0], "id2": snp_reader.iid[:,1], "y": y})
         out_data.to_csv(out_fn, sep=" ", header=False, index=False)
         
-        import pysnptools.pysnptools.snpreader.bed
-        fsd = create_feature_selection_distributable(pysnptools.pysnptools.snpreader.bed.Bed(snp_fn), out_fn, None, 0, "fs_out", snp_idx=rest_idx, include_all=True)
+        from pysnptools.snpreader import Bed
+        fsd = create_feature_selection_distributable(Bed(snp_fn), out_fn, None, 0, "fs_out", snp_idx=rest_idx, include_all=True)
         fs_result["result_uncond_all"] = Local().run(fsd)
         best_k, best_delta, best_obj, best_snps = fs_result["result_uncond_all"]
-        int_snp_idx = argintersect_left(snp_reader.rs[rest_idx], best_snps)
+        int_snp_idx = argintersect_left(snp_reader.sid[rest_idx], best_snps)
         fs_idx = np.array(rest_idx)[int_snp_idx]
         
         G_fs = G.take(fs_idx, axis=1)
@@ -442,6 +436,7 @@ def compute_kernel_diag_from_G(G):
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     
     
     #snp_fn = "data/toydata.5chrom"
@@ -449,9 +444,10 @@ def main():
     out_prefix = "results/mouse_"
 
     queue = "shared"
-    runner = Hadoop2(200, mapmemory=40*1024, reducememory=90*1024, mkl_num_threads=4, queue=queue)
+    #runner = Hadoop2(200, mapmemory=40*1024, reducememory=90*1024, mkl_num_threads=4, queue=queue)
     print "using snps", snp_fn
-    #runner = Local()
+    #runner = LocalMultiProc(20)
+    runner = Local()
 
     num_causals = 10
     num_repeats = 200
