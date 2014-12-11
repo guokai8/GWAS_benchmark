@@ -3,24 +3,24 @@ module to hierarchically cluster SNP data
 """
 
 import sys
-from fastlmm.pyplink.snpreader.Bed import Bed
+from pysnptools.snpreader import Bed
 import os.path
-import fastlmm.util.standardizer as stdizer
 import pylab
 import scipy.cluster.hierarchy as sch
 import fastcluster as fc
+import logging
 
 
 
-def cluster_data(bed_fn):
+def cluster_data(snpreader):
     """
     compute hierarchical clustering of snp data set in bed_fn
     """
 
-    snp_reader = Bed(bed_fn)
-    G = snp_reader.read()["snps"]
-    standardizer = stdizer.Unit()
-    G = standardizer.standardize(G)
+
+    if isinstance(snpreader,str):
+        snpreader = Bed(snpreader)
+    G = snpreader.read().standardize().val
 
     # Generate distance matrix
     from sklearn.metrics.pairwise import euclidean_distances
@@ -59,5 +59,7 @@ def test():
 
 
 if __name__ == '__main__':
+
+    logging.basicConfig(level=logging.INFO)
     bed_fn = sys.argv[1]
     cluster_data(bed_fn)
