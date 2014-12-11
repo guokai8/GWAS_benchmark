@@ -27,21 +27,7 @@
   <ItemGroup>
     <Compile Include="cluster_data.py" />
     <Compile Include="semisynth_simulations.py" />
-    <Compile Include="simulation\carlk4_runner.py" />
-    <Compile Include="simulation\carlk6_runner.py" />
-    <Compile Include="simulation\carlk_runner.py" />
-    <Compile Include="simulation\genPopStruct.py" />
-    <Compile Include="simulation\mainpca.py" />
-    <Compile Include="simulation\NPgenPopStruct.py" />
-    <Compile Include="simulation\pca.py" />
-    <Compile Include="simulation\plink_write.py" />
-    <Compile Include="simulation\plot_sim.py" />
-    <Compile Include="simulation\plot_sim_stage2_hv0.py" />
-    <Compile Include="simulation\plot_sim_stage3.py" />
-    <Compile Include="simulation\runner_example.py" />
-    <Compile Include="simulation\simulation_runner.py" />
     <Compile Include="simulation\simulator.py" />
-    <Compile Include="simulation\VertexCut.py" />
     <Compile Include="simulation\__init__.py" />
     <Compile Include="snp_gen.py">
       <SubType>Code</SubType>
@@ -58,8 +44,21 @@
     <Folder Include="tests\expected\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="simulation\simulation.pyproj" />
-    <Content Include="simulation\__init__.pyc" />
+    <Content Include="tests\expected\gen1.dat" />
+    <Content Include="tests\expected\gen1.fam" />
+    <Content Include="tests\expected\gen1.map" />
+    <Content Include="tests\expected\gen2.dat" />
+    <Content Include="tests\expected\gen2.fam" />
+    <Content Include="tests\expected\gen2.map" />
+    <Content Include="tests\expected\gen2b.dat" />
+    <Content Include="tests\expected\gen2b.fam" />
+    <Content Include="tests\expected\gen2b.map" />
+    <Content Include="tests\expected\gen3.dat" />
+    <Content Include="tests\expected\gen3.fam" />
+    <Content Include="tests\expected\gen3.map" />
+    <Content Include="tests\expected\gen4.dat" />
+    <Content Include="tests\expected\gen4.fam" />
+    <Content Include="tests\expected\gen4.map" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
