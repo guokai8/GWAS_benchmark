@@ -58,14 +58,14 @@ class sim_snps(object):
 
         #set the allele frequencies
         self.sample_frequencies()
-        pass
+
 
 
     def sample_frequencies(self):
         '''
         sample the allele frequencies for all ancestral SNPs and all populations
         ancestral frequencies are sampled uniformly according to MAFs
-        poulation frequencies from a Beta distribution (Balding and Nichols, 1995).
+        population frequencies from a Beta distribution (Balding and Nichols, 1995).
         '''
         #sample ancestral allele frequencies, len(p)=num_snps
         if self.p_ancestral is None:
@@ -496,13 +496,13 @@ class gwas_dataset(object):
 
 
 def generate_data(options,args):
-    num_snps = options.numSnps+options.csnps_hidden
+    num_snps = options.numSnps+options.csnps_hidden #csnps not rel
 
     #set random seed
     np.random.seed(options.randomseed)
 
-    num_children = 10
-    num_trios = int(options.numIndividuals*options.fracSibs/(2 * num_children))
+    num_children = 10 #!!!cmk make this param  sib_per_family
+    num_trios = int(options.numIndividuals*options.fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = options.numIndividuals-options.numIndividuals*options.fracSibs
     num_causal_obs = options.csnps
     num_causal_hidden = options.csnps_hidden
@@ -540,13 +540,13 @@ def generate_data(options,args):
     i_causal_diff = simsnps.differentiated[:,simphen.i_causal]
     
 
-    #SNP indicators for outupt writing
+    #SNP indicators for output writing
     i_SNPs={}
     #generate vector of causal observed SNPs
     i_SNPs['causal_obs'] = simphen.i_causal.copy()
     i_SNPs['causal_obs'][simsnps.differentiated[1]]=False
     #generate indicator vector of causal hidden SNPs (hidden confounders)
-    if 1:
+    if 1: #!!!cmk remove if
         i_SNPs['causal_hidden'] = simsnps.differentiated[1].copy()
     if 0:
         i_snps['observed'] = ~i_SNPs['causal_hidden']

@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{6b56c9c9-acef-4dc7-831e-e957b1a9f186}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>snp_gen.py</StartupFile>
+    <StartupFile>tests\test_snp_gen.py</StartupFile>
     <SearchPath>..;..\..\pysnptools;..\..\fastlmm</SearchPath>
     <WorkingDirectory>..</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -47,10 +47,15 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="split_data_helper.py" />
+    <Compile Include="tests\test_snp_gen.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="tests\" />
     <Folder Include="simulation\" />
+    <Folder Include="tests\expected\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="simulation\simulation.pyproj" />
