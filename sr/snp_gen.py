@@ -36,22 +36,12 @@ class _sim_snps(object):
     In case of no population structure, they are sampled from a binomial,
     otherwise from a Beta-Binomial (Balding and Nichols, 1995).
     """
-    def __init__(self, num_snps, num_differentiated = np.array([0]), MAF_ancestral = np.array([0.05,0.5]), Fst = np.array([[0.1,0.1]]), diploid = True, p_ancestral=None):
-        self.differentiated = None
+    def __init__(self, num_snps, MAF_ancestral = np.array([0.05,0.5]), Fst = np.array([[0.1,0.1]]), diploid = True, p_ancestral=None):
         self.num_snps=num_snps
         self.MAF_ancestral = MAF_ancestral
         self.Fst = Fst                                  #dimensions: number populations times number SNP groups
-        self.num_differentiated = num_differentiated    #dimensions: number of SNP groups
         self.p_ancestral=p_ancestral
 
-        #set differentiated SNPs
-        i_0 = 0
-        self.differentiated = np.zeros((len(self.num_differentiated),self.num_snps),dtype = 'bool')
-        
-        for i_group, num_diff in enumerate(self.num_differentiated):
-            self.differentiated[i_group,np.arange(i_0,i_0+num_diff)]=True
-            i_0+=num_diff
-        
         #set the allele frequencies
         self.sample_frequencies()
 
@@ -71,15 +61,12 @@ class _sim_snps(object):
         self.alphas = np.zeros((len(self.Fst[0]),self.p_ancestral.shape[0]))
         self.alphas[:,:]=self.p_ancestral
         
-        #re-sample differentiated population frequencies
-        for i_snpgroup in xrange(len(self.num_differentiated)):
-            for i_population, F in enumerate(self.Fst[i_snpgroup]):
-                i_snps = self.differentiated[i_snpgroup]
-                p_anc = self.p_ancestral[i_snps]
-                if F == 0.0: 
-                    self.alphas[i_population,i_snps] = p_anc #special treatment if no population structure
-                else:
-                    self.alphas[i_population,i_snps] = np.random.beta(p_anc*(1.0-F)/F,(1.0-p_anc)*(1.0-F)/F, p_anc.shape[0])
+        for i_population, F in enumerate(self.Fst[0]):
+            p_anc = self.p_ancestral
+            if F == 0.0: 
+                self.alphas[i_population,:] = p_anc #special treatment if no population structure
+            else:
+                self.alphas[i_population,:] = np.random.beta(p_anc*(1.0-F)/F,(1.0-p_anc)*(1.0-F)/F, p_anc.shape[0])
         pass
 
 
@@ -159,7 +146,6 @@ def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop
 
     num_trios = int(numIndividuals*fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = numIndividuals-numIndividuals*fracSibs
-    num_differentiated = np.array([num_snps])
     Fst = np.array([[fst,fst]])
     
     assert 0 <= pop_perc and pop_perc <=1.0,"assert 0 <= pop_perc and pop_perc <=1.0"
@@ -167,7 +153,7 @@ def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop
     
 
     num_trios_pop= pop_perc*num_trios
-    simsnps = _sim_snps(num_snps, num_differentiated = num_differentiated, MAF_ancestral = np.array([maf_low,maf_high]), Fst = Fst, p_ancestral=None)
+    simsnps = _sim_snps(num_snps, MAF_ancestral = np.array([maf_low,maf_high]), Fst = Fst, p_ancestral=None)
 
     snps_pop=[]
     i_parent_pop=[]
