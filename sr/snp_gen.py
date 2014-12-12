@@ -13,13 +13,45 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     fst is Degree of Population Structure, e.g. [0.005, 0.01, 0.05, 0.1] !!!cmk was self.FSTs
         fst=0 is a special case #!!!is it?
     dfr is Degree of Family Relatedness, the fraction of individuals belonging to a family [0.0, 0.5, 0.6, 0.7, 0.8, 0.9], e.g. #!!!cmk was self.fracSibs
-    iid_count !!!cmk was numIndividuals
+    iid_count !!!cmk was iid_count
     sid_count == numSnps
     MAF is Minor allele frequency
     freq_pop_1 !!cmk was caseFrac ????
 
     """
-    val = _generate_data(num_snps=sid_count,randomseed=seed,fracSibs=dfr,numIndividuals=iid_count,num_children=sibs_per_family,pop_perc=freq_pop_1,maf_low=maf_low,maf_high=maf_high,fst=fst)
+    #set random seed
+    np.random.seed(seed) #!!!cmk how many places is the seed set?
+
+    num_trios = int(iid_count*dfr/(2 * sibs_per_family)) #!!trio is a misnomer because mom+dad+10 kids
+    num_samples = iid_count-iid_count*dfr
+    
+    assert 0 <= freq_pop_1 and freq_pop_1 <=1.0,"assert 0 <= freq_pop_1 and freq_pop_1 <=1.0"
+    pop_perc = np.array([freq_pop_1, 1.0-freq_pop_1])
+    
+
+    num_trios_pop= pop_perc*num_trios
+    alphas = _sample_frequencies(sid_count, maf_low, maf_high, fst = fst)
+
+    snps_pop=[]
+    i_parent_pop=[]
+    nonchild_index_list = []
+    nonchild_start = 0
+    for i_pop in xrange(2): #"2" is the number of populations
+        snps=_generate_snps(alphas, int(num_samples*pop_perc[i_pop]), sid_count, population_index = i_pop)
+        nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps))
+        snps_kids,i_parent = _generate_trios(snps_parents=snps, num_trios=num_trios_pop[i_pop], num_children_per_couple=sibs_per_family)
+        nonchild_start += len(snps) + len(snps_kids)
+        snps_pop.append(np.concatenate([snps,snps_kids],0))
+        i_parent_pop.append(i_parent)
+    val = np.concatenate(snps_pop,0)
+    
+    snps_kids,i_parent = _generate_trios(snps_parents=val, num_trios=num_trios, num_children_per_couple=sibs_per_family)
+    val = np.concatenate([val,snps_kids],0)
+
+
+
+
+
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
     sid=np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
     pos = np.array(list([sid_index,0,0] for sid_index in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
@@ -89,39 +121,6 @@ def _sample_frequencies(num_snps, maf_low, maf_high, fst):
         else:
             alphas[i_population,:] = np.random.beta(p_ancestral*(1.0-fst)/fst,(1.0-p_ancestral)*(1.0-fst)/fst, p_ancestral.shape[0])
     return alphas
-
-
-def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop_perc,maf_low,maf_high,fst):
-    
-    #set random seed
-    np.random.seed(randomseed) #!!!cmk how many places is the seed set?
-
-    num_trios = int(numIndividuals*fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
-    num_samples = numIndividuals-numIndividuals*fracSibs
-    
-    assert 0 <= pop_perc and pop_perc <=1.0,"assert 0 <= pop_perc and pop_perc <=1.0"
-    pop_perc = np.array([pop_perc, 1.0-pop_perc])
-    
-
-    num_trios_pop= pop_perc*num_trios
-    alphas = _sample_frequencies(num_snps, maf_low, maf_high, fst = fst)
-
-    snps_pop=[]
-    i_parent_pop=[]
-    nonchild_index_list = []
-    nonchild_start = 0
-    for i_pop in xrange(2): #"2" is the number of populations
-        snps=_generate_snps(alphas, int(num_samples*pop_perc[i_pop]), num_snps, population_index = i_pop)
-        nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps))
-        snps_kids,i_parent = _generate_trios(snps_parents=snps, num_trios=num_trios_pop[i_pop], num_children_per_couple=num_children)
-        nonchild_start += len(snps) + len(snps_kids)
-        snps_pop.append(np.concatenate([snps,snps_kids],0))
-        i_parent_pop.append(i_parent)
-    snps_all = np.concatenate(snps_pop,0)
-    
-    snps_kids,i_parent = _generate_trios(snps_parents=snps_all, num_trios=num_trios, num_children_per_couple=num_children)
-    snps_all = np.concatenate([snps_all,snps_kids],0)
-    return snps_all
 
 def _mate(snps_parents, i_parent, num_children_per_couple):
     '''
