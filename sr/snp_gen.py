@@ -7,7 +7,7 @@ import time
 import random
 
 
-def write_plink(X, Y, basefilename='test',i_SNP=None): #!!!cmk rename
+def write_plink(X): #!!!cmk rename
     import pandas
     #import plink_write as pw
     sample_names =  np.array(['s_%d' % i for i in range(X.shape[0])], dtype=str)
@@ -19,10 +19,7 @@ def write_plink(X, Y, basefilename='test',i_SNP=None): #!!!cmk rename
     #F = pandas.DataFrame(data=fam_pid_mid_sex, index=sample_names, columns=['Family', 'Paternal ID', 'Maternal ID', 'Sex'])
     snp_names=np.empty(X.shape[1],dtype='|S15')
     for i in range(X.shape[1]):
-        if i_SNP['causal'][i]:
-            snp_names[i] = 'snp_%d_c' %i
-        else:
-            snp_names[i] = 'snp_%d' %i
+        snp_names[i] = 'snp_%d' %i
     #G = pandas.DataFrame(data=X, index=sample_names, columns=snp_names)
     return sample_names, family_names, snp_names
 
@@ -79,14 +76,10 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move t
     options.randomseed=seed
     options.penalty=None #!!!!cmk needed? 0 #not rel
 
-    snps,Y,simsnps,simphen,i_SNPs,nonchild_index_list = sim.generate_data(options,args)
+    snps = sim.generate_data(options,args)
 
 
-    #not rel because there will not be causal snps and hidden snps
-    i_SNPs_obs={}
-    i_SNPs_obs['causal']=i_SNPs['causal_obs'][~i_SNPs['causal_hidden']]
-    snps_obs=snps[:,~i_SNPs['causal_hidden']]
-    sample_names, family_names, sid = write_plink(snps_obs,Y,options.bfile,i_SNPs_obs) # generates iids and fids, etc. Gives causal obs a "_c" suffix
+    sample_names, family_names, sid = write_plink(snps)
     iid = np.array(list(zip(sample_names,family_names[:,0])))
     pos = np.array(list([i,0,0] for i in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
 

@@ -373,9 +373,7 @@ def generate_data(options,args):
     
     snps_kids,i_parent = simsnps.generate_trios(snps_parents=snps_all, num_trios=num_trios, population_percentages=None, snp_index=None, num_children_per_couple=num_children)
     snps_all = np.concatenate([snps_all,snps_kids],0)
-    Y,Z=None,None #simphen.generate_phenotype(X=snps_all,freq=simsnps.p_ancestral,make_binary=options.make_binary)
-    return snps_all,Y,simsnps,simphen,i_SNPs,nonchild_index_list
-    #Y_bin, transform_param = simphen.get_phenotype_transform(Y=Y, pheno_transform = 'liability', transform_param = transform_param, prevalence = prevalence, population_percentages=np.array(pop_perc))
+    return snps_all
 
 
 
