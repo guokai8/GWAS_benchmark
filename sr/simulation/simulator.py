@@ -150,7 +150,7 @@ class sim_snps(object):
 
 
 def generate_data(options,args):
-    num_snps = options.numSnps+options.csnps_hidden #csnps not rel
+    num_snps = options.numSnps
 
     #set random seed
     np.random.seed(options.randomseed)
@@ -158,12 +158,8 @@ def generate_data(options,args):
     num_children = 10 #!!!cmk make this param  sib_per_family
     num_trios = int(options.numIndividuals*options.fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = options.numIndividuals-options.numIndividuals*options.fracSibs
-    num_causal_obs = options.csnps
-    num_causal_hidden = options.csnps_hidden
-    num_causal = num_causal_obs+num_causal_hidden
-    assert num_causal<=num_snps,"num_causal<=num_snps"
     num_phenos = options.num_phen
-    num_differentiated = np.array([int(options.numSnps*options.diff),num_causal_hidden])
+    num_differentiated = np.array([int(options.numSnps*options.diff),0])
     Fst = np.array([[options.fst,options.fst],[np.NaN,np.NaN]])
     
     quiet=False
@@ -176,12 +172,6 @@ def generate_data(options,args):
     
     perc_causal_differentiated= np.array([0,0]) #!!!cmk remove options.diffCause*(1.0*num_causal_obs)/num_causal,(1.0*num_causal_hidden)/num_causal])
    
-    assert options.h2<=1.0 and options.h2 >=0.0,"assert h2<=1.0 and hidden_var >=0.0"
-    if num_causal_hidden==0:
-        options.var_hidden=0.0
-    assert options.var_hidden<1.0 and options.var_hidden >=0.0,"assert hiddenvar<1.0 and hidden_var >=0.0"
-    noise_var = (1.0-options.var_hidden)*(1.0-options.h2)
-
     
 
     num_trios_pop= pop_perc*num_trios
@@ -211,11 +201,7 @@ def generate_data(options,args):
 def parseArgs():
     parser = OptionParser()
     parser.add_option('--bfile', metavar='bfile', help='output bfile name (default = out)', default="")
-    parser.add_option('--csnps', metavar='csnps', type=int, default=100, help='number of causal SNPs')
-    parser.add_option('--csnps_hidden', metavar='csnps_hidden', type=int, default=100, help='number of hidden causal SNPs')
     parser.add_option('--fst', metavar='fst',  type=float, default=0.025, help='Fst distance between the two populations at observed SNPs')
-    parser.add_option('--h2', metavar='h2', type=float, default=0.5, help='trait heritability')
-    parser.add_option('--var_hidden', metavar='var_hidden', type=float, default=0.5, help='fraction of noise variance that is due to hidden SNPs')
     parser.add_option('--numSnps', metavar='numSnps', type=int, default=50000, help='number of observed SNPs')
     parser.add_option('--numIndividuals', metavar='numIndividuals', type=int, default=2000, help='number of individuals')
     parser.add_option('--minFreq', metavar='minFreq', type=float, default=0.1, help='minimum minor allele frequency')
