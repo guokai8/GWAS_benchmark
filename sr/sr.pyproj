@@ -27,8 +27,6 @@
   <ItemGroup>
     <Compile Include="cluster_data.py" />
     <Compile Include="semisynth_simulations.py" />
-    <Compile Include="simulation\simulator.py" />
-    <Compile Include="simulation\__init__.py" />
     <Compile Include="snp_gen.py">
       <SubType>Code</SubType>
     </Compile>
@@ -40,7 +38,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="tests\" />
-    <Folder Include="simulation\" />
     <Folder Include="tests\expected\" />
   </ItemGroup>
   <ItemGroup>
