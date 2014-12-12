@@ -18,10 +18,9 @@ class sim_snps(object):
     In case of no population structure, they are sampled from a binomial,
     otherwise from a Beta-Binomial (Balding and Nichols, 1995).
     """
-    def __init__(self, num_snps, num_differentiated = np.array([0]), MAF_ancestral = np.array([0.05,0.5]), Fst = np.array([[0.1,0.1]]), diploid = True, quiet = True, p_ancestral=None):
+    def __init__(self, num_snps, num_differentiated = np.array([0]), MAF_ancestral = np.array([0.05,0.5]), Fst = np.array([[0.1,0.1]]), diploid = True, p_ancestral=None):
         self.differentiated = None
         self.num_snps=num_snps
-        self.quiet = quiet
         self.MAF_ancestral = MAF_ancestral
         self.Fst = Fst                                  #dimensions: number populations times number SNP groups
         self.num_differentiated = num_differentiated    #dimensions: number of SNP groups
@@ -123,13 +122,11 @@ class sim_snps(object):
         if snp_index is None:
             snp_index = np.arange(self.num_snps)
         if population_index is None:
-            if not self.quiet:
-                print "Simulating SNPs from ancestral frequencies..."
+            logging.info("Simulating SNPs from ancestral frequencies...")
             #generate from ancestral frequencies
             pgen = self.p_ancestral[snp_index]
         else:        
-            if not self.quiet:
-                print ("Simulating SNPs from population %i" % population_index)
+            logging.info("Simulating SNPs from population %i" % population_index)
 
             #generate from population frequencies    
             pgen = self.alphas[population_index,snp_index]
@@ -158,25 +155,16 @@ def generate_data(options,args):
     num_children = 10 #!!!cmk make this param  sib_per_family
     num_trios = int(options.numIndividuals*options.fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = options.numIndividuals-options.numIndividuals*options.fracSibs
-    num_phenos = options.num_phen
     num_differentiated = np.array([int(options.numSnps*options.diff),0])
     Fst = np.array([[options.fst,options.fst],[np.NaN,np.NaN]])
     
-    quiet=False
     assert options.pop_perc<=1.0 and options.pop_perc>=0.0,"    assert options.pop_prec<=1.0 and options.pop_perc>=0.0"
     pop_perc = np.array([options.pop_perc, 1.0-options.pop_perc])
-    #prevalence = 0.3
-    #transform = 'liability'
     maf=options.minFreq
-    transform_param = None
-    
-    perc_causal_differentiated= np.array([0,0]) #!!!cmk remove options.diffCause*(1.0*num_causal_obs)/num_causal,(1.0*num_causal_hidden)/num_causal])
-   
     
 
     num_trios_pop= pop_perc*num_trios
-    #new snp simulator
-    simsnps = sim_snps(num_snps, num_differentiated = num_differentiated, MAF_ancestral = np.array([maf,0.5]), Fst = Fst, quiet = quiet, p_ancestral=None)
+    simsnps = sim_snps(num_snps, num_differentiated = num_differentiated, MAF_ancestral = np.array([maf,0.5]), Fst = Fst, p_ancestral=None)
 
     snps_pop=[]
     i_parent_pop=[]
@@ -209,10 +197,6 @@ def parseArgs():
     parser.add_option('--diffCause', metavar='diffCause', type=float, default=1.0, help='fraction of observed causal SNPs that are differented: 1.0 if all causal SNPs are differentiated, 0.0 if none')
     parser.add_option('--diff', metavar='diff', type=float, default=1.0, help='fraction of observed (causal or not) SNPs that are differented: 1.0 if all SNPs are differentiated, 0.0 if none')
     parser.add_option('--pop_perc', metavar='pop_perc', type=float, default=0.5, help='fraction of individuals from population 1 (rest 2)')
-    parser.add_option('--num_phen', metavar='num_phen', type=int, default=1, help='number of phenotypes being generated')
-    parser.add_option('--recompute', metavar='recompute', type=int, default=0, help='If intermediate files are present do not recompute previous steps' )
-    parser.add_option('--suff_pheno',metavar='suff_pheno',type=str,default='phen',help='suffix of the pheno file')
-    parser.add_option('--suff_pickle',metavar='suff_pickle',type=str,default='pickle',help='suffix of the pickle file')
     parser.add_option('--randomseed',metavar='randomseed',type=int,default=1,help='random seed')
     parser.add_option('--outdir',metavar='outdir',default="out",help="output directory")
     parser.add_option('--short_fn', metavar='short_fn', type=int, default=0, help='generate a random unique filename')
