@@ -56,15 +56,14 @@ class _sim_snps(object):
         p_ancestral = np.random.uniform(self.MAF_ancestral[0], self.MAF_ancestral[1], self.num_snps)
         
         #alphas: shape number(populations) times number(snps) and copy over ancestral frequencies
-        self.alphas = np.zeros([2,p_ancestral.shape[0]])
+        self.alphas = np.zeros([2,p_ancestral.shape[0]]) #"2" is the number of populations
         self.alphas[:,:]=p_ancestral
         
-        for i_population in xrange(2):
-            p_anc = p_ancestral
+        for i_population in xrange(2): #"2" is the number of populations
             if self.fst == 0.0: 
-                self.alphas[i_population,:] = p_anc #special treatment if no population structure
+                self.alphas[i_population,:] = p_ancestral #special treatment if no population structure
             else:
-                self.alphas[i_population,:] = np.random.beta(p_anc*(1.0-self.fst)/self.fst,(1.0-p_anc)*(1.0-self.fst)/self.fst, p_anc.shape[0])
+                self.alphas[i_population,:] = np.random.beta(p_ancestral*(1.0-self.fst)/self.fst,(1.0-p_ancestral)*(1.0-self.fst)/self.fst, p_ancestral.shape[0])
         pass
 
 
@@ -84,17 +83,12 @@ class _sim_snps(object):
                 snps[j*num_trios:(j+1)*num_trios][rand<0.5*snps_parents[i]]+=1
         return snps
 
-    def generate_trios(self, snps_parents=None, num_trios=0, population_percentages=None, snp_index=None, num_children_per_couple=1):
+    def generate_trios(self, snps_parents, num_trios=0, population_percentages=None, snp_index=None, num_children_per_couple=1):
         '''
         generate a single set of trios
         '''    
         num_trios = int(num_trios)
-        if snps_parents is None:
-            #sample parents
-            sample_size = 2*num_trios
-            snps_parents = self.generate_snps_populations(sample_size=sample_size,population_percentages=population_percentages,snp_index=snp_index)
-        else:
-            sample_size = snps_parents.shape[0]
+        sample_size = snps_parents.shape[0]
         num_snps = snps_parents.shape[1]
         assert sample_size>=2*num_trios, "sample_size>=2*num_trios"
         potential_parents = np.random.permutation(sample_size)
@@ -109,32 +103,24 @@ class _sim_snps(object):
         snps = self.mate(snps_parents_sampled, i_parent, num_children_per_couple)
         return snps, i_parent
 
-    def generate_snps(self, sample_size, snps=None, population_index=None, snp_index = None):
+    def generate_snps(self, sample_size, population_index):
         """
         Generates genotypes with a certain MAF and optionally with population structure.
         In case of no population structure, they are sampled from a binomial,
         otherwise from a Beta-Binomial (Balding and Nichols, 1995).
         """
-        if snp_index is None:
-            snp_index = np.arange(self.num_snps)
-        if population_index is None:
-            logging.info("Simulating SNPs from ancestral frequencies...")
-            #generate from ancestral frequencies
-            pgen = self.p_ancestral[snp_index]
-        else:        
-            logging.info("Simulating SNPs from population %i" % population_index)
+        snp_index = np.arange(self.num_snps)
+        logging.info("Simulating SNPs from population %i" % population_index)
 
-            #generate from population frequencies    
-            pgen = self.alphas[population_index,snp_index]
-        if snps is None:
-            snps = np.zeros((sample_size,pgen.shape[0]),dtype='int8')
-        else:
-            snps[:]=0
+        #generate from population frequencies    
+        pgen = self.alphas[population_index,snp_index]
+
+        snps = np.zeros((sample_size,pgen.shape[0]),dtype='int8')
+
         for i in xrange(2): #"2" for diploid
             #sample each allele
             rand = np.random.random((sample_size,pgen.shape[0]))
             snps[rand<pgen]+=1
-        #snps_ = np.random.binomial(self.chr_copies,pgen,(sample_size,pgen.shape[0]))
         return snps
 
 def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop_perc,maf_low,maf_high,fst):
@@ -157,8 +143,8 @@ def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop
     i_parent_pop=[]
     nonchild_index_list = []
     nonchild_start = 0
-    for i_pop in xrange(len(pop_perc)):
-        snps=simsnps.generate_snps(int(num_samples*pop_perc[i_pop]),population_index = i_pop, snp_index = None)
+    for i_pop in xrange(2): #"2" is the number of populations
+        snps=simsnps.generate_snps(int(num_samples*pop_perc[i_pop]),population_index = i_pop)
         nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps))
         snps_kids,i_parent = simsnps.generate_trios(snps_parents=snps, num_trios=num_trios_pop[i_pop], population_percentages=None, snp_index=None, num_children_per_couple=num_children)
         nonchild_start += len(snps) + len(snps_kids)
