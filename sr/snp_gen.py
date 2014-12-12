@@ -30,26 +30,22 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     ancestral = np.random.uniform(maf_low, maf_high, sid_count)     #sample ancestral allele frequencies
 
     snps_pop=[]
-    i_parent_pop=[]
     nonchild_index_list = []
     nonchild_start = 0
     for population_index, freq_pop in enumerate(freq_pops): #"2" is the number of populations
         logging.info("Simulating SNPs from a population %i" % population_index)
 
-        if fst == 0.0: 
-            alpha = ancestral #special treatment if no population structure
-        else:
-            alpha = np.random.beta(ancestral*(1.0-fst)/fst,(1.0-ancestral)*(1.0-fst)/fst, sid_count)
+        snps_parents=_generate_snps(ancestral, fst, int(iid_solo_count*freq_pop), sid_count)
 
-        snps_parents=_generate_snps(alpha, int(iid_solo_count*freq_pop), sid_count)
         nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps_parents))
-        snps_kids,i_parent = _generate_family(snps_parents=snps_parents, family_count=int(freq_pop*family_count), num_children_per_couple=sibs_per_family)
+
+        snps_kids = _generate_family(snps_parents=snps_parents, family_count=int(freq_pop*family_count), num_children_per_couple=sibs_per_family)
+
         nonchild_start += len(snps_parents) + len(snps_kids)
         snps_pop.append(np.concatenate([snps_parents,snps_kids],0))
-        i_parent_pop.append(i_parent)
     val = np.concatenate(snps_pop,0)
     
-    snps_kids,i_parent = _generate_family(snps_parents=val, family_count=family_count, num_children_per_couple=sibs_per_family)
+    snps_kids = _generate_family(snps_parents=val, family_count=family_count, num_children_per_couple=sibs_per_family)
     val = np.concatenate([val,snps_kids],0)
 
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
@@ -63,12 +59,18 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     return snpdata
 
 
-def _generate_snps(alpha, sample_size, sid_count):
+def _generate_snps(ancestral, fst, sample_size, sid_count):
     """
     Generates genotypes with a certain MAF and optionally with population structure.
     In case of no population structure, they are sampled from a binomial,
     otherwise from a Beta-Binomial (Balding and Nichols, 1995).
     """
+    if fst == 0.0: 
+        alpha = ancestral #special treatment if no population structure
+    else:
+        alpha = np.random.beta(ancestral*(1.0-fst)/fst,(1.0-ancestral)*(1.0-fst)/fst, sid_count)
+
+
     #generate from population frequencies    
     snps = np.zeros((sample_size,sid_count),dtype='int8')
     for i in xrange(2): #"2" for diploid
@@ -86,23 +88,23 @@ def _generate_family(snps_parents, family_count, num_children_per_couple):
     assert sample_size>=2*family_count, "sample_size>=2*family_count"
     potential_parents = np.random.permutation(sample_size)
     i_done=0
-    i_parent = np.empty([family_count,2],dtype = 'int64') #"2" for diploid
+    parent = np.empty([family_count,2],dtype = 'int64') #"2" for diploid
     snps_parents_sampled = []
-    for i in xrange(i_parent.shape[1]):
+    for i in xrange(parent.shape[1]):
         #sample each allele
-        i_parent[:,i] = potential_parents[i_done:i_done+family_count]
-        snps_parents_sampled.append(snps_parents[i_parent[:,i]])
+        parent[:,i] = potential_parents[i_done:i_done+family_count]
+        snps_parents_sampled.append(snps_parents[parent[:,i]])
         i_done+=family_count
-    snps = _mate(snps_parents_sampled, i_parent, num_children_per_couple)
-    return snps, i_parent
+    snps = _mate(snps_parents_sampled, parent, num_children_per_couple)
+    return snps
 
 
-def _mate(snps_parents, i_parent, num_children_per_couple):
+def _mate(snps_parents, parent, num_children_per_couple):
     '''
     given a set of snps for the parents, mate the individuals
     '''
     sid_count = snps_parents[0].shape[1]
-    family_count = i_parent.shape[0]
+    family_count = parent.shape[0]
     num_children = family_count*num_children_per_couple
     snps = np.zeros((num_children,sid_count),dtype='int8')
         
