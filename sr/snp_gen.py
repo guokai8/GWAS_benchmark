@@ -67,7 +67,7 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move t
     options.csnps_hidden = 0
     options.h2 = .5  #!!!cmk needed?  #not rel
     options.fracSibs = dfr
-    options.csnps = 10 #!!!cmk what is this?  #not rel
+    options.csnps = 0 #!!!cmk what is this?  #not rel
     options.minFreq = maf_low
     options.fst = fst
 

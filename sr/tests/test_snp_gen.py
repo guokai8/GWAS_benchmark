@@ -31,7 +31,7 @@ class TestSnpGen(unittest.TestCase):
     def gen_and_compare(self, output_file, **kwargs):
         gen_snpdata = snp_gen(**kwargs)
         #pstutil.create_directory_if_necessary(elf.currentFolder + "/tempdir/" + output_file,isfile=True) #!!!cmk move this to Ped.write?
-        #Dat.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file) #!!!cmk comment out
+        Dat.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file) #!!!cmk comment out
         ref_snpdata = Dat(self.currentFolder + "/expected/" + output_file).read()
         assert TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Failure on "+output_file
         return gen_snpdata
@@ -40,24 +40,24 @@ class TestSnpGen(unittest.TestCase):
 
 
     def test_gen1(self):
-        self.gen_and_compare("gen1.dat", fst=0,dfr=.5,iid_count=200,sid_count=10,maf_low=.05,seed=5)
+        self.gen_and_compare("gen1.dat", fst=0,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5)
 
     def test_gen2(self):
-        self.gen_and_compare("gen2.dat", fst=.1,dfr=.5,iid_count=200,sid_count=10,maf_low=.05,seed=5)
+        self.gen_and_compare("gen2.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5)
 
     def test_gen2b(self):
         """
         Test that different seed produces different result
         """
-        gen_snpdata = self.gen_and_compare("gen2b.dat", fst=.1,dfr=.5,iid_count=200,sid_count=10,maf_low=.05,seed=6)
+        gen_snpdata = self.gen_and_compare("gen2b.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=6)
         ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
     def test_gen3(self):
-        self.gen_and_compare("gen3.dat", fst=.1,dfr=0,iid_count=200,sid_count=10,maf_low=.05,seed=5)
+        self.gen_and_compare("gen3.dat", fst=.1,dfr=0,iid_count=200,sid_count=20,maf_low=.05,seed=5)
 
     def test_gen4(self):
-        self.gen_and_compare("gen4.dat", fst=.1,dfr=.01,iid_count=200,sid_count=10,maf_low=.1,seed=5)
+        self.gen_and_compare("gen4.dat", fst=.1,dfr=.01,iid_count=200,sid_count=20,maf_low=.1,seed=5)
 
 
 def getTestSuite():

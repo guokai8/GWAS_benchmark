@@ -520,7 +520,7 @@ def generate_data(options,args):
     maf=options.minFreq
     transform_param = None
     
-    perc_causal_differentiated= np.array([options.diffCause*(1.0*num_causal_obs)/num_causal,(1.0*num_causal_hidden)/num_causal])
+    perc_causal_differentiated= np.array([0,0]) #!!!cmk remove options.diffCause*(1.0*num_causal_obs)/num_causal,(1.0*num_causal_hidden)/num_causal])
    
     assert options.h2<=1.0 and options.h2 >=0.0,"assert h2<=1.0 and hidden_var >=0.0"
     if num_causal_hidden==0:
@@ -556,10 +556,10 @@ def generate_data(options,args):
     
     #gen_var = np.array([genetic_var/num_causal_obs, hidden_var/num_causal_hidden])
     gen_var = np.zeros(num_causal)
-    gen_var[~i_causal_diff.any(0)]=np.sqrt(options.h2/num_causal_obs)
-    gen_var[i_causal_diff[0]]=np.sqrt(options.h2/num_causal_obs)
+    gen_var[~i_causal_diff.any(0)]=0#!!!np.sqrt(options.h2/num_causal_obs)
+    gen_var[i_causal_diff[0]]=0#!!!np.sqrt(options.h2/num_causal_obs)
     if num_causal_hidden>0:
-        gen_var[i_causal_diff[1]]=np.sqrt(options.var_hidden*(1.0-options.h2)/num_causal_hidden)
+        gen_var[i_causal_diff[1]]=0#!!!np.sqrt(options.var_hidden*(1.0-options.h2)/num_causal_hidden)
     simphen.W=(simphen.W.T*gen_var).T
 
 
