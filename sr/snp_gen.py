@@ -19,8 +19,7 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     freq_pop_1 !!cmk was caseFrac ????
 
     """
-    #set random seed
-    np.random.seed(seed) #!!!cmk how many places is the seed set?
+    np.random.seed(seed)
 
     num_trios = int(iid_count*dfr/(2 * sibs_per_family)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = iid_count-iid_count*dfr
@@ -48,10 +47,6 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     snps_kids,i_parent = _generate_trios(snps_parents=val, num_trios=num_trios, num_children_per_couple=sibs_per_family)
     val = np.concatenate([val,snps_kids],0)
 
-
-
-
-
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
     sid=np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
     pos = np.array(list([sid_index,0,0] for sid_index in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
@@ -72,14 +67,11 @@ def _generate_snps(alphas, sample_size, num_snps, population_index):
     logging.info("Simulating SNPs from population %i" % population_index)
 
     #generate from population frequencies    
-    pgen = alphas[population_index,:]
-
-    snps = np.zeros((sample_size,pgen.shape[0]),dtype='int8')
-
+    snps = np.zeros((sample_size,num_snps),dtype='int8')
     for i in xrange(2): #"2" for diploid
         #sample each allele
-        rand = np.random.random((sample_size,pgen.shape[0]))
-        snps[rand<pgen]+=1
+        rand = np.random.random((sample_size,num_snps))
+        snps[rand<alphas[population_index,:]]+=1
     return snps
 
 def _generate_trios(snps_parents, num_trios, num_children_per_couple):
