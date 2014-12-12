@@ -20,7 +20,6 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
 
     """
     assert 0 <= freq_pop_0 and freq_pop_0 <=1.0,"assert 0 <= freq_pop_0 and freq_pop_0 <=1.0"
-    freq_pops = np.array([freq_pop_0, 1.0-freq_pop_0])
 
     np.random.seed(seed)
 
@@ -29,24 +28,14 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
 
     ancestral = np.random.uniform(maf_low, maf_high, sid_count)     #sample ancestral allele frequencies
 
-    snps_pop=[]
-    nonchild_index_list = []
-    nonchild_start = 0
-    for population_index, freq_pop in enumerate(freq_pops): #"2" is the number of populations
+    snp_list=[]
+    for population_index, freq_pop in enumerate([freq_pop_0, 1.0-freq_pop_0]):
         logging.info("Simulating SNPs from a population %i" % population_index)
-
         snps_parents=_generate_snps(ancestral, fst, int(iid_solo_count*freq_pop), sid_count)
-
-        nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps_parents))
-
-        snps_kids = _generate_family(snps_parents=snps_parents, family_count=int(freq_pop*family_count), num_children_per_couple=sibs_per_family)
-
-        nonchild_start += len(snps_parents) + len(snps_kids)
-        snps_pop.append(np.concatenate([snps_parents,snps_kids],0))
-    val = np.concatenate(snps_pop,0)
-    
-    snps_kids = _generate_family(snps_parents=val, family_count=family_count, num_children_per_couple=sibs_per_family)
-    val = np.concatenate([val,snps_kids],0)
+        snp_list.append(snps_parents)
+        snp_list.append(_generate_kids(snps_parents=snps_parents, family_count=int(freq_pop*family_count), num_children_per_couple=sibs_per_family))
+    snp_list.append(_generate_kids(snps_parents=np.concatenate(snp_list,axis=0), family_count=family_count, num_children_per_couple=sibs_per_family))
+    val = np.concatenate(snp_list,axis=0)
 
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
     sid=np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
@@ -79,7 +68,7 @@ def _generate_snps(ancestral, fst, sample_size, sid_count):
         snps[rand<alpha]+=1
     return snps
 
-def _generate_family(snps_parents, family_count, num_children_per_couple):
+def _generate_kids(snps_parents, family_count, num_children_per_couple):
     '''
     generate a single set of family members
     '''    
