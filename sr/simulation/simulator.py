@@ -146,22 +146,22 @@ class sim_snps(object):
 
 
 
-def generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop_perc,maf,fst):
+def generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop_perc,maf_low,maf_high,fst):
     
     #set random seed
     np.random.seed(randomseed)
 
     num_trios = int(numIndividuals*fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = numIndividuals-numIndividuals*fracSibs
-    num_differentiated = np.array([num_snps,0])
-    Fst = np.array([[fst,fst],[np.NaN,np.NaN]])
+    num_differentiated = np.array([num_snps])
+    Fst = np.array([[fst,fst]])
     
     assert 0 <= pop_perc and pop_perc <=1.0,"assert 0 <= pop_perc and pop_perc <=1.0"
     pop_perc = np.array([pop_perc, 1.0-pop_perc])
     
 
     num_trios_pop= pop_perc*num_trios
-    simsnps = sim_snps(num_snps, num_differentiated = num_differentiated, MAF_ancestral = np.array([maf,0.5]), Fst = Fst, p_ancestral=None)
+    simsnps = sim_snps(num_snps, num_differentiated = num_differentiated, MAF_ancestral = np.array([maf_low,maf_high]), Fst = Fst, p_ancestral=None)
 
     snps_pop=[]
     i_parent_pop=[]

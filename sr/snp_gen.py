@@ -23,7 +23,7 @@ def write_plink(X): #!!!cmk rename
     #G = pandas.DataFrame(data=X, index=sample_names, columns=snp_names)
     return sample_names, family_names, snp_names
 
-def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0,sibs_per_family=10,freq_pop_1=.5): #!!!cmk move this to the front
+def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sibs_per_family=10,freq_pop_1=.5): #!!!cmk move this to the front
     """
     #!!!cmk fill in with docs including example
 
@@ -51,7 +51,7 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0,sibs_per_family=
 
 
     import sr.simulation.simulator as sim
-    snps = sim.generate_data(num_snps=sid_count,randomseed=seed,fracSibs=dfr,numIndividuals=iid_count,num_children=sibs_per_family,pop_perc=freq_pop_1,maf=maf_low,fst=fst)
+    snps = sim.generate_data(num_snps=sid_count,randomseed=seed,fracSibs=dfr,numIndividuals=iid_count,num_children=sibs_per_family,pop_perc=freq_pop_1,maf_low=maf_low,maf_high=maf_high,fst=fst)
 
 
     sample_names, family_names, sid = write_plink(snps)
