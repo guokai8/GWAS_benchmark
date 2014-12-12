@@ -1,32 +1,16 @@
 import numpy as np
 import scipy as sp
-import pdb, sys, pickle
-#import matplotlib.pylab as plt
+import sys
 import datetime
 import scipy.stats
 from optparse import OptionParser
 import pandas
-import cPickle
 import os
 import scipy.stats as st
 import external.fastlmmc as fc
 import fastlmm.util.util as util
 import logging
 
-#class snps(object):
-
-#class bed_snps(snps):
-
-#    def __init__(self, bedfilename):
-
-#     def generate_snps(self, sample_size, population_index=None, snp_index = None):
-#        """
-        
-#        """
-    
-#     def sample_frequencies(self):
-#         raise Exception("not implemented for this class")  
-      
 
 class sim_snps(object):
     """
@@ -97,7 +81,6 @@ class sim_snps(object):
         num_children = num_trios*num_children_per_couple #10 children per couple
         snps = np.zeros((num_children,num_snps),dtype='int8')
         
-        #import pdb; pdb.set_trace()
         for i in xrange(len(snps_parents)):
             #sample each allele
             for j in xrange(num_children_per_couple):
@@ -210,15 +193,12 @@ def generate_data(options,args):
     nonchild_index_list = []
     nonchild_start = 0
     for i_pop in xrange(len(pop_perc)):
-        #import pdb; pdb.set_trace()
         snps=simsnps.generate_snps(int(num_samples*pop_perc[i_pop]),population_index = i_pop, snp_index = None)
         nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps))
-        #import pdb; pdb.set_trace()
         snps_kids,i_parent = simsnps.generate_trios(snps_parents=snps, num_trios=num_trios_pop[i_pop], population_percentages=None, snp_index=None, num_children_per_couple=num_children)
         nonchild_start += len(snps) + len(snps_kids)
         snps_pop.append(np.concatenate([snps,snps_kids],0))
         i_parent_pop.append(i_parent)
-    #import pdb; pdb.set_trace()
     snps_all = np.concatenate(snps_pop,0)
     
     snps_kids,i_parent = simsnps.generate_trios(snps_parents=snps_all, num_trios=num_trios, population_percentages=None, snp_index=None, num_children_per_couple=num_children)
