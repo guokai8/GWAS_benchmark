@@ -329,30 +329,6 @@ def generate_data(options,args):
     
     simphen=sim_pheno(num_causal=num_causal, i_causal=None, W=None, W_covariates=None, noise_var=noise_var, genetic_var=1.0, num_phenotypes=num_phenos, perc_causal_differentiated=perc_causal_differentiated, weight_distribution='normal', quiet=quiet, covariates_var=0.3, sim_snps=simsnps)
 
-    i_causal_diff = simsnps.differentiated[:,simphen.i_causal]
-    
-
-    #SNP indicators for output writing
-    i_SNPs={}
-    #generate vector of causal observed SNPs
-    i_SNPs['causal_obs'] = simphen.i_causal.copy()
-    i_SNPs['causal_obs'][simsnps.differentiated[1]]=False
-    #generate indicator vector of causal hidden SNPs (hidden confounders)
-    if 1: #!!!cmk remove if
-        i_SNPs['causal_hidden'] = simsnps.differentiated[1].copy()
-    if 0:
-        i_snps['observed'] = ~i_SNPs['causal_hidden']
-    #generate vector of non-causal SNPs
-    i_SNPs['noncausal']=~simphen.i_causal
-    #i_SNPs['differentiated']=simsnps.differentiated
-    
-    #gen_var = np.array([genetic_var/num_causal_obs, hidden_var/num_causal_hidden])
-    gen_var = np.zeros(num_causal)
-    gen_var[~i_causal_diff.any(0)]=0#!!!np.sqrt(options.h2/num_causal_obs)
-    gen_var[i_causal_diff[0]]=0#!!!np.sqrt(options.h2/num_causal_obs)
-    if num_causal_hidden>0:
-        gen_var[i_causal_diff[1]]=0#!!!np.sqrt(options.var_hidden*(1.0-options.h2)/num_causal_hidden)
-    simphen.W=(simphen.W.T*gen_var).T
 
 
     snps_pop=[]
