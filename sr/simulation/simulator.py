@@ -285,74 +285,6 @@ class sim_pheno(object):
             raise Exception("not implemented")
         return W
 
-    def generate_phenotype(self, X_causal=None, X=None, covariates = None, add_noise=True, add_covariates=False, add_assoc=True, add_interactions=False, freq_causal=None,freq=None,make_binary=False):
-        """
-        Generates the phenotype by summing together all the individual variance components.
-        Note: the phenotype is not guaranteed to be centered  and scaled, because that
-        functionality does not belong here. It's much better if the individual methods
-        implement it.
-
-        """
-        if X_causal is None:
-            X_causal=X[:,self.i_causal]
-        N=X_causal.shape[0]
-        
-        Y = np.zeros((N, self.num_phenotypes))
-        Z={}
-        if add_assoc:
-            if freq_causal is None and freq is not None:
-                freq_causal=freq[self.i_causal]
-            Z['assoc'] = self.add_associations(X_causal = X_causal, freq_causal=freq_causal)
-        if add_noise:
-            Z['noise'] = self.add_noise(X=X_causal)
-
-        for k in Z.keys():
-            Y += Z[k]
-            if not self.quiet:
-                print "Variance due to %s = %.3f" % (k, Z[k].var())
-
-
-        return Y,Z
-
-    def add_associations(self, X_causal, freq_causal=None):
-        """
-        Simulates associations.
-        """
-
-        if freq_causal is not None:
-            if not self.quiet:
-                print "standardizing SNPs by ancestral freqs..."
-            X_causal=standardize_freq(snps=X_causal,freq=freq_causal)
-        if not self.quiet:
-            print "Adding associations..."
-        XW = np.dot(X_causal, self.W)
-        return XW
-
-    def add_noise(self,X=None,dof=1,loc=0.0):
-        """
-        Adds Gaussian/Student noise
-        """
-        if not self.quiet:
-            print "Adding noise..."
-        noise_std = np.sqrt(self.noise_var)
-        if self.noise_distribution=='normal':
-            Z = noise_std*sp.randn(X.shape[0], self.num_phenotypes)
-        elif self.noise_distribution=='Student':
-            Z= sp.stats.t.rvs(dof, loc, self.noise_var, size=(X.shape[0],num_phenotypes))
-        else:
-            raise Exception("not implemented")
-        return Z
-
-
-        
-
-
-def standardize_freq(snps,freq):
-    X=snps
-    X=(X-2.0*freq)/np.sqrt(2.0*freq*(1.0-freq))
-    return X
-
-
 
 
 def generate_data(options,args):
@@ -441,7 +373,7 @@ def generate_data(options,args):
     
     snps_kids,i_parent = simsnps.generate_trios(snps_parents=snps_all, num_trios=num_trios, population_percentages=None, snp_index=None, num_children_per_couple=num_children)
     snps_all = np.concatenate([snps_all,snps_kids],0)
-    Y,Z=simphen.generate_phenotype(X=snps_all,freq=simsnps.p_ancestral,make_binary=options.make_binary)
+    Y,Z=None,None #simphen.generate_phenotype(X=snps_all,freq=simsnps.p_ancestral,make_binary=options.make_binary)
     return snps_all,Y,simsnps,simphen,i_SNPs,nonchild_index_list
     #Y_bin, transform_param = simphen.get_phenotype_transform(Y=Y, pheno_transform = 'liability', transform_param = transform_param, prevalence = prevalence, population_percentages=np.array(pop_perc))
 

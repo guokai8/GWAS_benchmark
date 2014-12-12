@@ -10,8 +10,8 @@ import random
 def write_plink(X, Y, basefilename='test',i_SNP=None): #!!!cmk rename
     import pandas
     #import plink_write as pw
-    sample_names =  np.array(['s_%d' % i for i in range(Y.shape[0])], dtype=str)
-    family_names = np.array(['f_%d' % i for i in range(Y.shape[0])], dtype=str)[:, None]
+    sample_names =  np.array(['s_%d' % i for i in range(X.shape[0])], dtype=str)
+    family_names = np.array(['f_%d' % i for i in range(X.shape[0])], dtype=str)[:, None]
     paternal_ids = np.zeros_like(family_names,dtype=str)
     maternal_ids = np.zeros_like(family_names,dtype=str)
     sex = np.zeros_like(family_names,dtype=str)
