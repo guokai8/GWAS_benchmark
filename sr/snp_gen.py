@@ -52,11 +52,6 @@ class _sim_snps(object):
             self.differentiated[i_group,np.arange(i_0,i_0+num_diff)]=True
             i_0+=num_diff
         
-        if diploid:
-            self.chr_copies = 2
-        else:
-            self.chr_copies = 1
-
         #set the allele frequencies
         self.sample_frequencies()
 
@@ -92,7 +87,6 @@ class _sim_snps(object):
         '''
         given a set of snps for the parents, mate the individuals
         '''
-        assert self.chr_copies==2, "assert self.chr_copies==2"
         num_snps = snps_parents[0].shape[1]
         num_trios = i_parent.shape[0]
         num_children = num_trios*num_children_per_couple #10 children per couple
@@ -109,7 +103,6 @@ class _sim_snps(object):
         '''
         generate a single set of trios
         '''    
-        assert self.chr_copies==2, "assert self.chr_copies==2"
         num_trios = int(num_trios)
         if snps_parents is None:
             #sample parents
@@ -121,9 +114,9 @@ class _sim_snps(object):
         assert sample_size>=2*num_trios, "sample_size>=2*num_trios"
         potential_parents = np.random.permutation(sample_size)
         i_done=0
-        i_parent = np.empty([num_trios,self.chr_copies],dtype = 'int64')
+        i_parent = np.empty([num_trios,2],dtype = 'int64') #"2" for diploid
         snps_parents_sampled = []
-        for i in xrange(self.chr_copies):
+        for i in xrange(i_parent.shape[1]):
             #sample each allele
             i_parent[:,i] = potential_parents[i_done:i_done+num_trios]
             snps_parents_sampled.append(snps_parents[i_parent[:,i]])
@@ -152,7 +145,7 @@ class _sim_snps(object):
             snps = np.zeros((sample_size,pgen.shape[0]),dtype='int8')
         else:
             snps[:]=0
-        for i in xrange(self.chr_copies):
+        for i in xrange(2): #"2" for diploid
             #sample each allele
             rand = np.random.random((sample_size,pgen.shape[0]))
             snps[rand<pgen]+=1
