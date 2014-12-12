@@ -37,11 +37,10 @@ def _generate_snps(alphas, sample_size, num_snps, population_index):
     In case of no population structure, they are sampled from a binomial,
     otherwise from a Beta-Binomial (Balding and Nichols, 1995).
     """
-    snp_index = np.arange(num_snps)
     logging.info("Simulating SNPs from population %i" % population_index)
 
     #generate from population frequencies    
-    pgen = alphas[population_index,snp_index]
+    pgen = alphas[population_index,:]
 
     snps = np.zeros((sample_size,pgen.shape[0]),dtype='int8')
 
@@ -51,7 +50,7 @@ def _generate_snps(alphas, sample_size, num_snps, population_index):
         snps[rand<pgen]+=1
     return snps
 
-def _generate_trios(snps_parents, num_trios=0, population_percentages=None, snp_index=None, num_children_per_couple=1):
+def _generate_trios(snps_parents, num_trios, num_children_per_couple):
     '''
     generate a single set of trios
     '''    
@@ -114,13 +113,13 @@ def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop
     for i_pop in xrange(2): #"2" is the number of populations
         snps=_generate_snps(alphas, int(num_samples*pop_perc[i_pop]), num_snps, population_index = i_pop)
         nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps))
-        snps_kids,i_parent = _generate_trios(snps_parents=snps, num_trios=num_trios_pop[i_pop], population_percentages=None, snp_index=None, num_children_per_couple=num_children)
+        snps_kids,i_parent = _generate_trios(snps_parents=snps, num_trios=num_trios_pop[i_pop], num_children_per_couple=num_children)
         nonchild_start += len(snps) + len(snps_kids)
         snps_pop.append(np.concatenate([snps,snps_kids],0))
         i_parent_pop.append(i_parent)
     snps_all = np.concatenate(snps_pop,0)
     
-    snps_kids,i_parent = _generate_trios(snps_parents=snps_all, num_trios=num_trios, population_percentages=None, snp_index=None, num_children_per_couple=num_children)
+    snps_kids,i_parent = _generate_trios(snps_parents=snps_all, num_trios=num_trios, num_children_per_couple=num_children)
     snps_all = np.concatenate([snps_all,snps_kids],0)
     return snps_all
 
