@@ -87,36 +87,6 @@ class sim_snps(object):
         pass
 
 
-    def generate_snps(self, sample_size, population_index=None, snp_index = None):
-        """
-        Generates genotypes with a certain MAF and optionally with population structure.
-        In case of no population structure, they are sampled from a binomial,
-        otherwise from a Beta-Binomial (Balding and Nichols, 1995).
-        """
-        if snp_index is None:
-            snp_index = np.arange(self.num_snps)
-        if population_index is None:
-            if not self.quiet:
-                print "Simulating SNPs from ancestral frequencies..."
-            #generate from ancestral frequencies
-            pgen = self.p_ancestral[snp_index]
-        else:        
-            if not self.quiet:
-                print ("Simulating SNPs from population %i" % population_index)
-
-            #generate from population frequencies    
-            pgen = self.alphas[population_index,snp_index]
-        snps = np.zeros((sample_size,pgen.shape[0]),dtype='int8')
-        for i in xrange(self.chr_copies):
-            #sample each allele
-            rand = np.random.random((sample_size,pgen.shape[0]))
-            snps[rand<pgen]+=1
-        #snps_ = np.random.binomial(self.chr_copies,pgen,(sample_size,pgen.shape[0]))
-        return snps
-
-    def gen_snps_familystruct(self, snps_parents=None):
-        pass
-
     def mate(self, snps_parents, i_parent, num_children_per_couple):
         '''
         given a set of snps for the parents, mate the individuals
@@ -193,97 +163,6 @@ class sim_snps(object):
 
 
 
-class sim_pheno(object):
-    def __init__(self, num_causal=1, i_causal=None, W=None, W_covariates=None, noise_var=0.1, genetic_var=0.1, num_phenotypes=1, perc_causal_differentiated=np.array([0.5]), weight_distribution='normal', quiet=True, covariates_var=0.3, sim_snps=None, noise_distribution='normal'):
-        #parameters needed for the liability threshold model
-        self.W = W                          #snp effects
-        self.W_covariates = W_covariates    #covariates effects
-        self.i_causal = i_causal
-        self.num_causal = num_causal
-        self.quiet = quiet
-        self.sim_snps = sim_snps            #snp simulation class
-        self.num_causal = num_causal
-        self.perc_causal_differentiated = perc_causal_differentiated
-        self.num_phenotypes=num_phenotypes
-        self.weight_distribution=weight_distribution
-        self.noise_distribution=noise_distribution
-        self.noise_var=noise_var,
-        
-        self.genetic_var=genetic_var
-        
-        #generate indices of causal SNPs
-        if self.i_causal is None:
-            self.generate_i_causal()
-
-        #generate SNP effects
-        if self.W is None:
-            self.W = self.generateW(num_causal=self.num_causal, num_phenotypes=self.num_phenotypes, weight_distribution=self.weight_distribution,genetic_var=self.genetic_var)
-
-        #generate covariates effects
-        if self.W_covariates is None:
-            pass
-        pass
-
-
-    def generate_i_causal(self):
-        '''
-        generate the indices of the causal SNPs
-        Randomly sample causal SNPs
-        '''
-        diff =  self.sim_snps.differentiated
-        n_diff = self.sim_snps.num_differentiated
-        n_snps = self.sim_snps.num_snps
-        n_groups = diff.shape[0]
-        n_causal= self.num_causal
-        i_causal = np.zeros(n_snps,dtype='bool')
-        
-        n_causal_tot=0
-        #first non-differentiated causal SNPs
-        i_notdiff=~diff.any(0)
-        n_diff_g=int((1.0-self.perc_causal_differentiated.sum())*n_causal)
-        if (n_snps-n_diff.sum())<n_diff_g:
-                raise Exception("n_snps-n_diff.sum())<n_diff_g")
-        int_index_g=np.where(i_notdiff)[0]
-        perm = np.random.permutation(int_index_g.shape[0])
-        i_causal[int_index_g[perm[:n_diff_g]]]=True
-        n_causal_tot+=n_diff_g
-        #then for each differentiatedness group mark differentiated causal SNPs
-        for i_group in xrange(n_groups):
-            n_diff_g=int(self.perc_causal_differentiated[i_group]*n_causal)
-            if n_diff[i_group]<n_diff_g:
-                raise Exception("n_diff[i_group]<n_diff_g")
-            #pdb.set_trace()
-            int_index_g=np.where(diff[i_group])[0]
-            perm = np.random.permutation(int_index_g.shape[0])
-            i_causal[int_index_g[perm[:n_diff_g]]]=True
-            n_causal_tot+=n_diff_g
-            pass
-        #correct the number of causal SNPs
-        n_diff=n_causal_tot-n_causal
-        
-        if n_diff>0:#too many causals
-            int_c = np.where(i_causal)[0]
-            perm = np.random.permutation(int_c.shape[0])
-            i_causal[int_c[perm[:n_diff]]]=False
-        elif n_diff<0:#too few causals
-            int_c = np.where(~i_causal)[0]
-            perm = np.random.permutation(int_c.shape[0])
-            i_causal[int_c[perm[:-n_diff]]]=True
-        self.i_causal=i_causal
-        
-
-
-    def generateW(self, num_causal=1, num_phenotypes=1, weight_distribution='normal', genetic_var=0.1, dof=1, mean = 0.0):
-        '''
-        generate weights
-        '''
-        if weight_distribution == 'Student':
-            W = sp.stats.t.rvs(dof, mean, genetic_var, size=(num_causal,num_phenotypes))
-        elif weight_distribution == 'normal':
-            W = np.random.randn(num_causal, num_phenotypes) * np.sqrt(genetic_var) + mean
-        else:
-            raise Exception("not implemented")
-        return W
 
 
 
