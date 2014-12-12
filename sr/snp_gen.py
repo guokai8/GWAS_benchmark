@@ -25,9 +25,9 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     np.random.seed(seed)
 
     iid_solo_count = iid_count-iid_count*dfr
-    family_count = int(iid_count*dfr/(2 * sibs_per_family)) #!!trio is a misnomer because mom+dad+10 kids
+    family_count = int(iid_count*dfr/(2 * sibs_per_family))
 
-    alphas = _sample_frequencies(sid_count, maf_low, maf_high, fst = fst, population_count=len(freq_pops))
+    ancestral = np.random.uniform(maf_low, maf_high, sid_count)     #sample ancestral allele frequencies
 
     snps_pop=[]
     i_parent_pop=[]
@@ -35,7 +35,11 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     nonchild_start = 0
     for population_index, freq_pop in enumerate(freq_pops): #"2" is the number of populations
         logging.info("Simulating SNPs from a population %i" % population_index)
-        alpha = alphas[population_index,:]
+
+        if fst == 0.0: 
+            alpha = ancestral #special treatment if no population structure
+        else:
+            alpha = np.random.beta(ancestral*(1.0-fst)/fst,(1.0-ancestral)*(1.0-fst)/fst, sid_count)
 
         snps_parents=_generate_snps(alpha, int(iid_solo_count*freq_pop), sid_count)
         nonchild_index_list = nonchild_index_list + range(nonchild_start,nonchild_start+len(snps_parents))
@@ -92,23 +96,6 @@ def _generate_family(snps_parents, family_count, num_children_per_couple):
     snps = _mate(snps_parents_sampled, i_parent, num_children_per_couple)
     return snps, i_parent
 
-def _sample_frequencies(sid_count, maf_low, maf_high, fst, population_count):
-    '''
-    sample the allele frequencies for all ancestral SNPs and all populations
-    ancestral frequencies are sampled uniformly according to MAFs
-    population frequencies from a Beta distribution (Balding and Nichols, 1995).
-    '''
-    #sample ancestral allele frequencies
-    ancestral = np.random.uniform(maf_low, maf_high, sid_count)
-        
-    #alphas: shape number(populations) times number(snps) and copy over ancestral frequencies
-    alphas = np.empty([population_count,sid_count])
-    for population_index in xrange(population_count):
-        if fst == 0.0: 
-            alphas[population_index,:] = ancestral #special treatment if no population structure
-        else:
-            alphas[population_index,:] = np.random.beta(ancestral*(1.0-fst)/fst,(1.0-ancestral)*(1.0-fst)/fst, sid_count)
-    return alphas
 
 def _mate(snps_parents, i_parent, num_children_per_couple):
     '''
