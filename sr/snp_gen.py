@@ -18,16 +18,13 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     MAF is Minor allele frequency
     freq_pop_1 !!cmk was caseFrac ????
 
-    #!!!cmk do we still want maf_high?
-    #!!!cmk, freq_pop_1=.5, 
-
-
     """
-    snps = _generate_data(num_snps=sid_count,randomseed=seed,fracSibs=dfr,numIndividuals=iid_count,num_children=sibs_per_family,pop_perc=freq_pop_1,maf_low=maf_low,maf_high=maf_high,fst=fst)
+    val = _generate_data(num_snps=sid_count,randomseed=seed,fracSibs=dfr,numIndividuals=iid_count,num_children=sibs_per_family,pop_perc=freq_pop_1,maf_low=maf_low,maf_high=maf_high,fst=fst)
+    iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
+    sid=np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
+    pos = np.array(list([sid_index,0,0] for sid_index in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
 
-    iid, sid, pos =  _write_plink(snps)
-
-    snpdata = SnpData(iid, sid, pos, snps, 
+    snpdata = SnpData(iid, sid, pos, val, 
                       parent_string="snp_gen(fst={0}, dfr={1}, iid_count={2}, sid_count={3}, maf_low={4})".format(fst, dfr, iid_count, sid_count, maf_low) #!!!cmk is this up-to-date?
                       )
 
@@ -196,22 +193,6 @@ def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop
     snps_all = np.concatenate([snps_all,snps_kids],0)
     return snps_all
 
-def _write_plink(X): #!!!cmk rename
-    #import plink_write as pw
-    sample_names =  np.array(['i_%d' % i for i in range(X.shape[0])], dtype=str)
-    family_names = np.array(['f_%d' % i for i in range(X.shape[0])], dtype=str)[:, None]
-    paternal_ids = np.zeros_like(family_names,dtype=str)
-    maternal_ids = np.zeros_like(family_names,dtype=str)
-    sex = np.zeros_like(family_names,dtype=str)
-    fam_pid_mid_sex = np.concatenate((family_names, paternal_ids, maternal_ids, sex), axis=1)
-    sid=np.empty(X.shape[1],dtype='|S15')
-    for i in range(X.shape[1]):
-        sid[i] = 'snp_%d' %i
-
-    iid = np.array(list(zip(sample_names,family_names[:,0])))
-    pos = np.array(list([i,0,0] for i in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
-
-    return iid, sid, pos
 
 if __name__ == "__main__":
 
