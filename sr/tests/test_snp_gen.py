@@ -59,6 +59,21 @@ class TestSnpGen(unittest.TestCase):
     def test_gen4(self):
         self.gen_and_compare("gen4.dat", fst=.1,dfr=.01,iid_count=200,sid_count=20,maf_low=.1,seed=5)
 
+    def test_gen5(self):
+        gen_snpdata = self.gen_and_compare("gen5.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,maf_high=.4, seed=5)
+        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
+
+    def test_gen6(self):
+        gen_snpdata = self.gen_and_compare("gen6.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,sibs_per_family=5)
+        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
+
+    def test_gen7(self):
+        gen_snpdata = self.gen_and_compare("gen7.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,freq_pop_1=.75)
+        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
+
 
 def getTestSuite():
     """
