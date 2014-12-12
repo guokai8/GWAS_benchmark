@@ -23,7 +23,7 @@ def write_plink(X): #!!!cmk rename
     #G = pandas.DataFrame(data=X, index=sample_names, columns=snp_names)
     return sample_names, family_names, snp_names
 
-def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move this to the front
+def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0,sibs_per_family=10,freq_pop_1=.5): #!!!cmk move this to the front
     """
     #!!!cmk fill in with docs including example
 
@@ -46,38 +46,12 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move t
 
     #self.FSTs = np.array([0.005, 0.01, 0.05, 0.1])
     #self.fracSibs=np.array([0.0,0.05,0.1,0.2])
-    #self.h2s = np.arange(0.1, 0.7, 0.1)
-    #self.var_hidden = np.arange(0.0, 1.0, 0.3)
-    #self.num_causal = np.array([10, 50, 100, 500, 1000])
     #self.FSTs, self.fracSibs, self.h2s, self.var_hidden, self.num_causal
     #fst, fracSibs, h2, hh2, causal = params
 
 
-    # freq_pop_1=.5 #!!!cmk these three are being ignored
-
     import sr.simulation.simulator as sim
-
-    #fst, fracSibs, h2, hh2, causal = params
-    options, args = sim.parseArgs()
-    # here we just call parseargs because I'm not sure whether
-    # the default params are set in the init or not. It's just for safety
-    # we override the important stuff anyway
-    options.csnps_hidden = 0
-    options.h2 = .5  #!!!cmk needed?  #not rel
-    options.fracSibs = dfr
-    options.csnps = 0 #!!!cmk what is this?  #not rel
-    options.minFreq = maf_low
-    options.fst = fst
-
-    options.var_hidden = 0 #!!!cmk needed? #not rel
-    options.short_fn=None#!!!cmk remove
-    options.numIndividuals=iid_count
-    options.numSnps = sid_count
-    options.num_folds=None #!!!cmk needed? 10? #not rel
-    options.randomseed=seed
-    options.penalty=None #!!!!cmk needed? 0 #not rel
-
-    snps = sim.generate_data(options,args)
+    snps = sim.generate_data(num_snps=sid_count,randomseed=seed,fracSibs=dfr,numIndividuals=iid_count,num_children=sibs_per_family,pop_perc=freq_pop_1,maf=maf_low,fst=fst)
 
 
     sample_names, family_names, sid = write_plink(snps)

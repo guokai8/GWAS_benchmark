@@ -146,21 +146,18 @@ class sim_snps(object):
 
 
 
-def generate_data(options,args):
-    num_snps = options.numSnps
-
-    #set random seed
-    np.random.seed(options.randomseed)
-
-    num_children = 10 #!!!cmk make this param  sib_per_family
-    num_trios = int(options.numIndividuals*options.fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
-    num_samples = options.numIndividuals-options.numIndividuals*options.fracSibs
-    num_differentiated = np.array([int(options.numSnps*options.diff),0])
-    Fst = np.array([[options.fst,options.fst],[np.NaN,np.NaN]])
+def generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop_perc,maf,fst):
     
-    assert options.pop_perc<=1.0 and options.pop_perc>=0.0,"    assert options.pop_prec<=1.0 and options.pop_perc>=0.0"
-    pop_perc = np.array([options.pop_perc, 1.0-options.pop_perc])
-    maf=options.minFreq
+    #set random seed
+    np.random.seed(randomseed)
+
+    num_trios = int(numIndividuals*fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
+    num_samples = numIndividuals-numIndividuals*fracSibs
+    num_differentiated = np.array([num_snps,0])
+    Fst = np.array([[fst,fst],[np.NaN,np.NaN]])
+    
+    assert 0 <= pop_perc and pop_perc <=1.0,"assert 0 <= pop_perc and pop_perc <=1.0"
+    pop_perc = np.array([pop_perc, 1.0-pop_perc])
     
 
     num_trios_pop= pop_perc*num_trios
@@ -182,28 +179,4 @@ def generate_data(options,args):
     snps_kids,i_parent = simsnps.generate_trios(snps_parents=snps_all, num_trios=num_trios, population_percentages=None, snp_index=None, num_children_per_couple=num_children)
     snps_all = np.concatenate([snps_all,snps_kids],0)
     return snps_all
-
-
-
-
-def parseArgs():
-    parser = OptionParser()
-    parser.add_option('--bfile', metavar='bfile', help='output bfile name (default = out)', default="")
-    parser.add_option('--fst', metavar='fst',  type=float, default=0.025, help='Fst distance between the two populations at observed SNPs')
-    parser.add_option('--numSnps', metavar='numSnps', type=int, default=50000, help='number of observed SNPs')
-    parser.add_option('--numIndividuals', metavar='numIndividuals', type=int, default=2000, help='number of individuals')
-    parser.add_option('--minFreq', metavar='minFreq', type=float, default=0.1, help='minimum minor allele frequency')
-    parser.add_option('--fracSibs', metavar='fracSibs', type=float, default=0.3, help='fraction of siblings in the data')
-    parser.add_option('--diffCause', metavar='diffCause', type=float, default=1.0, help='fraction of observed causal SNPs that are differented: 1.0 if all causal SNPs are differentiated, 0.0 if none')
-    parser.add_option('--diff', metavar='diff', type=float, default=1.0, help='fraction of observed (causal or not) SNPs that are differented: 1.0 if all SNPs are differentiated, 0.0 if none')
-    parser.add_option('--pop_perc', metavar='pop_perc', type=float, default=0.5, help='fraction of individuals from population 1 (rest 2)')
-    parser.add_option('--randomseed',metavar='randomseed',type=int,default=1,help='random seed')
-    parser.add_option('--outdir',metavar='outdir',default="out",help="output directory")
-    parser.add_option('--short_fn', metavar='short_fn', type=int, default=0, help='generate a random unique filename')
-    parser.add_option('--num_folds', metavar='num_folds', type=int, default=10, help='number of train test splits for feature selection')
-    parser.add_option('--penalty', metavar='penalty', type=float, default=0.0, help='regression penalty on fixed effects (e.g. PCs)')
-    parser.add_option('--make_binary', metavar='make_binary', type=int, default=0, help='Should the phenotype be boolean?')
-    parser.add_option('--vertex_cutoff', metavar='vertex_cutoff', type=float, default=0.1, help='Cutoff removing related iids')
-    (options, args) = parser.parse_args()
-    return (options,args)
 
