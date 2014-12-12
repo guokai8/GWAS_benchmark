@@ -327,8 +327,10 @@ def generate_data(options,args):
     simsnps = sim_snps(num_snps, num_differentiated = num_differentiated, MAF_ancestral = np.array([maf,0.5]), Fst = Fst, quiet = quiet, p_ancestral=None)
     
     
+    #!!!cmk may be important only because it uses the random number generator
+    state = np.random.get_state()
     simphen=sim_pheno(num_causal=num_causal, i_causal=None, W=None, W_covariates=None, noise_var=noise_var, genetic_var=1.0, num_phenotypes=num_phenos, perc_causal_differentiated=perc_causal_differentiated, weight_distribution='normal', quiet=quiet, covariates_var=0.3, sim_snps=simsnps)
-
+    np.random.set_state(state)
 
 
     snps_pop=[]

@@ -42,6 +42,7 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move t
     """
     #!!!cmk want??? t0 = time.time()
     #random.seed(seed) #!!!cmk still needed?
+    #np.random.seed(seed)
 
     #self.FSTs = np.array([0.005, 0.01, 0.05, 0.1])
     #self.fracSibs=np.array([0.0,0.05,0.1,0.2])
