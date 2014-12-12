@@ -67,21 +67,6 @@ class _sim_snps(object):
         pass
 
 
-    def mate(self, snps_parents, i_parent, num_children_per_couple):
-        '''
-        given a set of snps for the parents, mate the individuals
-        '''
-        num_snps = snps_parents[0].shape[1]
-        num_trios = i_parent.shape[0]
-        num_children = num_trios*num_children_per_couple #10 children per couple
-        snps = np.zeros((num_children,num_snps),dtype='int8')
-        
-        for i in xrange(len(snps_parents)):
-            #sample each allele
-            for j in xrange(num_children_per_couple):
-                rand = np.random.random((num_trios,num_snps))
-                snps[j*num_trios:(j+1)*num_trios][rand<0.5*snps_parents[i]]+=1
-        return snps
 
     def generate_trios(self, snps_parents, num_trios=0, population_percentages=None, snp_index=None, num_children_per_couple=1):
         '''
@@ -100,7 +85,7 @@ class _sim_snps(object):
             i_parent[:,i] = potential_parents[i_done:i_done+num_trios]
             snps_parents_sampled.append(snps_parents[i_parent[:,i]])
             i_done+=num_trios
-        snps = self.mate(snps_parents_sampled, i_parent, num_children_per_couple)
+        snps = _mate(snps_parents_sampled, i_parent, num_children_per_couple)
         return snps, i_parent
 
     def generate_snps(self, sample_size, population_index):
@@ -126,11 +111,10 @@ class _sim_snps(object):
 def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop_perc,maf_low,maf_high,fst):
     
     #set random seed
-    np.random.seed(randomseed)
+    np.random.seed(randomseed) #!!!cmk how many places is the seed set?
 
     num_trios = int(numIndividuals*fracSibs/(2 * num_children)) #!!trio is a misnomer because mom+dad+10 kids
     num_samples = numIndividuals-numIndividuals*fracSibs
-    Fst = np.array([[fst,fst]])
     
     assert 0 <= pop_perc and pop_perc <=1.0,"assert 0 <= pop_perc and pop_perc <=1.0"
     pop_perc = np.array([pop_perc, 1.0-pop_perc])
@@ -156,6 +140,21 @@ def _generate_data(num_snps, randomseed,fracSibs,numIndividuals,num_children,pop
     snps_all = np.concatenate([snps_all,snps_kids],0)
     return snps_all
 
+def _mate(snps_parents, i_parent, num_children_per_couple):
+    '''
+    given a set of snps for the parents, mate the individuals
+    '''
+    num_snps = snps_parents[0].shape[1]
+    num_trios = i_parent.shape[0]
+    num_children = num_trios*num_children_per_couple #10 children per couple
+    snps = np.zeros((num_children,num_snps),dtype='int8')
+        
+    for i in xrange(len(snps_parents)):
+        #sample each allele
+        for j in xrange(num_children_per_couple):
+            rand = np.random.random((num_trios,num_snps))
+            snps[j*num_trios:(j+1)*num_trios][rand<0.5*snps_parents[i]]+=1
+    return snps
 
 if __name__ == "__main__":
 
