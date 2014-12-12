@@ -510,7 +510,7 @@ def generate_data(options,args):
     assert num_causal<=num_snps,"num_causal<=num_snps"
     num_phenos = options.num_phen
     num_differentiated = np.array([int(options.numSnps*options.diff),num_causal_hidden])
-    Fst = np.array([[options.fst,options.fst],[options.fst_hidden,options.fst_hidden]])
+    Fst = np.array([[options.fst,options.fst],[np.NaN,np.NaN]])
     
     quiet=False
     assert options.pop_perc<=1.0 and options.pop_perc>=0.0,"    assert options.pop_prec<=1.0 and options.pop_perc>=0.0"
@@ -738,7 +738,6 @@ def parseArgs():
     parser.add_option('--csnps', metavar='csnps', type=int, default=100, help='number of causal SNPs')
     parser.add_option('--csnps_hidden', metavar='csnps_hidden', type=int, default=100, help='number of hidden causal SNPs')
     parser.add_option('--fst', metavar='fst',  type=float, default=0.025, help='Fst distance between the two populations at observed SNPs')
-    parser.add_option('--fst_hidden', metavar='fst_hidden',  type=float, default=0.2, help='Fst distance between the two populations at hidden SNPs')
     parser.add_option('--h2', metavar='h2', type=float, default=0.5, help='trait heritability')
     parser.add_option('--var_hidden', metavar='var_hidden', type=float, default=0.5, help='fraction of noise variance that is due to hidden SNPs')
     parser.add_option('--numSnps', metavar='numSnps', type=int, default=50000, help='number of observed SNPs')

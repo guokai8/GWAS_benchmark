@@ -70,9 +70,6 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, seed=0): #!!!cmk move t
     options.csnps = 10 #!!!cmk what is this?  #not rel
     options.minFreq = maf_low
     options.fst = fst
-    if fst == 0.0:
-        options.fst_hidden = 0.0
-        logging.warn("SETTING fst_hidden to 0.0") #!!!cmk what this about? #not rel
 
     options.var_hidden = 0 #!!!cmk needed? #not rel
     options.short_fn=None#!!!cmk remove
