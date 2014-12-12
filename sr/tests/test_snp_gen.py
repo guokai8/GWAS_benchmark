@@ -70,7 +70,7 @@ class TestSnpGen(unittest.TestCase):
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
     def test_gen7(self):
-        gen_snpdata = self.gen_and_compare("gen7.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,freq_pop_1=.75)
+        gen_snpdata = self.gen_and_compare("gen7.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,freq_pop_0=.75)
         ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
