@@ -33,6 +33,7 @@ class TestSnpGen(unittest.TestCase):
         #pstutil.create_directory_if_necessary(elf.currentFolder + "/tempdir/" + output_file,isfile=True) #!!!cmk move this to Ped.write?
         Dat.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file) #!!!cmk comment out
         ref_snpdata = Dat(self.currentFolder + "/expected/" + output_file).read()
+        #!!!cmk assert kwargs['iid_count']==gen_snpdata.iid_count and kwargs['sid_count']==gen_snpdata.sid_count
         assert TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Failure on "+output_file
         return gen_snpdata
         #!!!cmk Ped doesn't seem to round trip well

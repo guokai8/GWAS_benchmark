@@ -33,12 +33,14 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
         logging.info("Simulating SNPs from a population %i" % population_index)
         snps_parents=_generate_snps(ancestral, fst, int(iid_solo_count*freq_pop), sid_count)
         snp_list.append(snps_parents)
-        snp_list.append(_generate_kids(snps_parents=snps_parents, family_count=int(freq_pop*family_count), num_children_per_couple=sibs_per_family))
-    snp_list.append(_generate_kids(snps_parents=np.concatenate(snp_list,axis=0), family_count=family_count, num_children_per_couple=sibs_per_family))
-    val = np.concatenate(snp_list,axis=0)
+
+        snp_list.append(_generate_kids(parent_snps=snps_parents, family_count=int(freq_pop*family_count), sibs_per_family=sibs_per_family))
+
+    snp_list.append(_generate_kids(parent_snps=np.concatenate(snp_list), family_count=family_count, sibs_per_family=sibs_per_family))
+    val = np.concatenate(snp_list)
 
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
-    sid=np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
+    sid = np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
     pos = np.array(list([sid_index,0,0] for sid_index in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
 
     snpdata = SnpData(iid, sid, pos, val, 
@@ -61,48 +63,32 @@ def _generate_snps(ancestral, fst, sample_size, sid_count):
 
 
     #generate from population frequencies    
-    snps = np.zeros((sample_size,sid_count),dtype='int8')
+    snps = np.zeros((sample_size,sid_count),dtype='int8') #.zeros not .empty because will be adding 1's to it
     for i in xrange(2): #"2" for diploid
         #sample each allele
         rand = np.random.random((sample_size,sid_count))
         snps[rand<alpha]+=1
     return snps
 
-def _generate_kids(snps_parents, family_count, num_children_per_couple):
+
+def _generate_kids(parent_snps, family_count, sibs_per_family): #!!!cmk should it be sibs, kids, or children
     '''
     generate a single set of family members
     '''    
-    sample_size = snps_parents.shape[0]
-    sid_count = snps_parents.shape[1]
-    assert sample_size>=2*family_count, "sample_size>=2*family_count"
-    potential_parents = np.random.permutation(sample_size)
-    i_done=0
-    parent = np.empty([family_count,2],dtype = 'int64') #"2" for diploid
-    snps_parents_sampled = []
-    for i in xrange(parent.shape[1]):
-        #sample each allele
-        parent[:,i] = potential_parents[i_done:i_done+family_count]
-        snps_parents_sampled.append(snps_parents[parent[:,i]])
-        i_done+=family_count
-    snps = _mate(snps_parents_sampled, parent, num_children_per_couple)
-    return snps
+    parent_count, sid_count = parent_snps.shape
+    assert parent_count>=2*family_count, "sample_size>=2*family_count"
 
 
-def _mate(snps_parents, parent, num_children_per_couple):
-    '''
-    given a set of snps for the parents, mate the individuals
-    '''
-    sid_count = snps_parents[0].shape[1]
-    family_count = parent.shape[0]
-    num_children = family_count*num_children_per_couple
-    snps = np.zeros((num_children,sid_count),dtype='int8')
-        
-    for i in xrange(len(snps_parents)):
+    parent_permutation = np.random.permutation(parent_count)
+    snps = np.zeros((family_count*sibs_per_family,sid_count),dtype='int8')
+    for copy_index in xrange(2):#"2" for diploid
         #sample each allele
-        for j in xrange(num_children_per_couple):
+        sample = parent_snps[parent_permutation[copy_index*family_count:(copy_index+1)*family_count],:]
+        for kid_index in xrange(sibs_per_family):
             rand = np.random.random((family_count,sid_count))
-            snps[j*family_count:(j+1)*family_count][rand<0.5*snps_parents[i]]+=1
+            snps[kid_index*family_count:(kid_index+1)*family_count][rand<0.5*sample]+=1
     return snps
+
 
 if __name__ == "__main__":
 
