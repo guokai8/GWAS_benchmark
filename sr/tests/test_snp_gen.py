@@ -8,8 +8,8 @@ import os.path
 import os
 import time
 
-from sr.snp_gen import snp_gen #!!!cmk shorten namespace so not snp_gen.snp_gen
-from pysnptools.snpreader import Dat
+from sr import snp_gen
+from pysnptools.snpreader import Bed
 import pysnptools.util as pstutil
    
 class TestSnpGen(unittest.TestCase):     
@@ -21,58 +21,61 @@ class TestSnpGen(unittest.TestCase):
 
     @staticmethod
     def is_same(snpdata0, snpdata1): #!!! should this be an equality _eq_ operator on snpdata?
-        result = (np.array_equal(snpdata0.iid,snpdata1.iid) and 
+        if not (np.array_equal(snpdata0.iid,snpdata1.iid) and 
                   np.array_equal(snpdata0.sid, snpdata1.sid) and 
-                  np.array_equal(snpdata0.iid, snpdata1.iid) and 
-                  np.array_equal(snpdata0.pos, snpdata1.pos) and
-                  np.array_equal(snpdata0.val, snpdata1.val))
-        return result
+                  np.array_equal(snpdata0.pos, snpdata1.pos)):
+            return False
+
+        try:
+            np.testing.assert_equal(snpdata0.val, snpdata1.val)
+        except:
+            return False
+        return True
 
     def gen_and_compare(self, output_file, **kwargs):
         gen_snpdata = snp_gen(**kwargs)
-        #pstutil.create_directory_if_necessary(elf.currentFolder + "/tempdir/" + output_file,isfile=True) #!!!cmk move this to Ped.write?
-        Dat.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file) #!!!cmk comment out
-        ref_snpdata = Dat(self.currentFolder + "/expected/" + output_file).read()
-        #!!!cmk assert kwargs['iid_count']==gen_snpdata.iid_count and kwargs['sid_count']==gen_snpdata.sid_count
+        pstutil.create_directory_if_necessary(self.currentFolder + "/tempdir/" + output_file,isfile=True)
+        Bed.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file) #!!!cmk comment out
+        ref_snpdata = Bed(self.currentFolder + "/expected/" + output_file).read()
         assert TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Failure on "+output_file
         return gen_snpdata
-        #!!!cmk Ped doesn't seem to round trip well
-        #!!!cmk Hdf5 doesn't seem to round trip well
+        #!!! Ped doesn't seem to round trip well
+        #!!! Hdf5 doesn't seem to round trip well
 
 
     def test_gen1(self):
-        self.gen_and_compare("gen1.dat", fst=0,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5)
+        self.gen_and_compare("gen1", fst=0,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5)
 
     def test_gen2(self):
-        self.gen_and_compare("gen2.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5)
+        self.gen_and_compare("gen2", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5)
 
     def test_gen2b(self):
         """
         Test that different seed produces different result
         """
-        gen_snpdata = self.gen_and_compare("gen2b.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=6)
-        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        gen_snpdata = self.gen_and_compare("gen2b", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=6)
+        ref_snpdata = Bed(self.currentFolder + "/expected/gen2").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
     def test_gen3(self):
-        self.gen_and_compare("gen3.dat", fst=.1,dfr=0,iid_count=200,sid_count=20,maf_low=.05,seed=5)
+        self.gen_and_compare("gen3", fst=.1,dfr=0,iid_count=200,sid_count=20,maf_low=.05,seed=5)
 
     def test_gen4(self):
-        self.gen_and_compare("gen4.dat", fst=.1,dfr=.01,iid_count=200,sid_count=20,maf_low=.1,seed=5)
+        self.gen_and_compare("gen4", fst=.1,dfr=.01,iid_count=200,sid_count=20,maf_low=.1,seed=5)
 
     def test_gen5(self):
-        gen_snpdata = self.gen_and_compare("gen5.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,maf_high=.4, seed=5)
-        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        gen_snpdata = self.gen_and_compare("gen5", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,maf_high=.4, seed=5)
+        ref_snpdata = Bed(self.currentFolder + "/expected/gen2").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
     def test_gen6(self):
-        gen_snpdata = self.gen_and_compare("gen6.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,sibs_per_family=5)
-        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        gen_snpdata = self.gen_and_compare("gen6", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,sibs_per_family=5)
+        ref_snpdata = Bed(self.currentFolder + "/expected/gen2").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
     def test_gen7(self):
-        gen_snpdata = self.gen_and_compare("gen7.dat", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,freq_pop_0=.75)
-        ref_snpdata = Dat(self.currentFolder + "/expected/gen2.dat").read()
+        gen_snpdata = self.gen_and_compare("gen7", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,freq_pop_0=.75)
+        ref_snpdata = Bed(self.currentFolder + "/expected/gen2").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
 

@@ -6,18 +6,43 @@ import logging
 import pysnptools.util as pstutil
 from pysnptools.snpreader import SnpData
 
-def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sibs_per_family=10,freq_pop_0=.5): #!!!cmk move this to the front
-    """
-    #!!!cmk fill in with docs including example
+def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sibs_per_family=10,freq_pop_0=.5):
+    """Generates a random :class:`.SnpData`
 
-    fst is Degree of Population Structure, e.g. [0.005, 0.01, 0.05, 0.1] !!!cmk was self.FSTs
-        fst=0 is a special case #!!!is it?
-    dfr is Degree of Family Relatedness, the fraction of individuals belonging to a family [0.0, 0.5, 0.6, 0.7, 0.8, 0.9], e.g. #!!!cmk was self.fracSibs
-    iid_count !!!cmk was iid_count
-    sid_count == numSnps
-    MAF is Minor allele frequency
-    freq_pop_0 !!cmk was caseFrac ????
+    :param fst: Degree of Population Structure, e.g. 0 (a special case), 0.005, 0.01, 0.05, 0.1
+    :type fst: float
 
+    :param dft: Degree of Family Relatedness, the fraction of individuals belonging to a family, ie. fracSibs, e.g. 0.0, 0.5, 0.6, 0.7, 0.8, 0.9
+    :type dft: float
+
+    :param iid_count: The number of individuals to generate. Because of rounding the actual number may be less.
+    :type iid_count: int
+
+    :param sid_count: The number of snps to generate.
+    :type sid_count: int
+
+    :param maf_low: (default .05) lower bound of uniformly-generated Minor allele frequency
+    :type maf_low: float
+
+    :param maf_high: (default .5) upper bound of uniformly-generated Minor allele frequency
+    :type maf_high: float
+
+    :param seed: (default 0) Random seed
+    :type seed: int
+
+    :param sibs_per_family: (default 10) number of siblings in each family
+    :type sibs_per_family: int
+
+    :param freq_pop_0: (default .5) Fraction of individuals in population 0 (the rest will be in population 1)
+    :type freq_pop_0: float
+
+    :rtype: :class:`.SnpData`
+
+    :Example:
+
+    >>> snpdata = snp_gen(fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=6)
+    >>> print snpdata.iid_count, snpdata.sid_count #because of rounding got 190 individuals
+    190, 20
     """
     assert 0 <= freq_pop_0 and freq_pop_0 <=1.0,"assert 0 <= freq_pop_0 and freq_pop_0 <=1.0"
 
@@ -44,13 +69,17 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     pos = np.array(list([sid_index,0,0] for sid_index in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
 
     snpdata = SnpData(iid, sid, pos, val, 
-                      parent_string="snp_gen(fst={0}, dfr={1}, iid_count={2}, sid_count={3}, maf_low={4})".format(fst, dfr, iid_count, sid_count, maf_low) #!!!cmk is this up-to-date?
+                      parent_string="snp_gen(fst={0}, dfr={1}, iid_count={2}, sid_count={3}, maf_low={4}, maf_high={5}, seed={6}, sibs_per_family={7}, freq_pop_0={8})"
+                      .format(fst, dfr, iid_count, sid_count, maf_low, maf_high, seed, sibs_per_family, freq_pop_0)
                       )
+
+    if snpdata.iid_count != iid_count:
+        logging.warn("Because of rounding the actual number of iids is {0} rather than the requested {1}".format(snpdata.iid_count, iid_count))
 
     return snpdata
 
 
-def _generate_snps(ancestral, fst, sample_size, sid_count):
+def _generate_snps(ancestral, fst, iid_count, sid_count):
     """
     Generates genotypes with a certain MAF and optionally with population structure.
     In case of no population structure, they are sampled from a binomial,
@@ -63,27 +92,26 @@ def _generate_snps(ancestral, fst, sample_size, sid_count):
 
 
     #generate from population frequencies    
-    snps = np.zeros((sample_size,sid_count),dtype='int8') #.zeros not .empty because will be adding 1's to it
+    snps = np.zeros((iid_count,sid_count),dtype='int8') #.zeros not .empty because will be adding 1's to it
     for i in xrange(2): #"2" for diploid
         #sample each allele
-        rand = np.random.random((sample_size,sid_count))
+        rand = np.random.random((iid_count,sid_count))
         snps[rand<alpha]+=1
     return snps
 
 
-def _generate_kids(parent_snps, family_count, sibs_per_family): #!!!cmk should it be sibs, kids, or children
+def _generate_kids(parent_snps, family_count, sibs_per_family): #!!! should it be sibs, kids, or children
     '''
     generate a single set of family members
     '''    
     parent_count, sid_count = parent_snps.shape
-    assert parent_count>=2*family_count, "sample_size>=2*family_count"
+    assert parent_count>=2*family_count, "parent_count>=2*family_count"
 
 
     parent_permutation = np.random.permutation(parent_count)
-    snps = np.zeros((family_count*sibs_per_family,sid_count),dtype='int8')
+    snps = np.zeros((family_count*sibs_per_family,sid_count),dtype=np.float64)
     for copy_index in xrange(2):#"2" for diploid
-        #sample each allele
-        sample = parent_snps[parent_permutation[copy_index*family_count:(copy_index+1)*family_count],:]
+        sample = parent_snps[parent_permutation[copy_index*family_count:(copy_index+1)*family_count],:]         #sample each allele
         for kid_index in xrange(sibs_per_family):
             rand = np.random.random((family_count,sid_count))
             snps[kid_index*family_count:(kid_index+1)*family_count][rand<0.5*sample]+=1
