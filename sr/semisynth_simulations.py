@@ -19,16 +19,18 @@ import pylab
 
 from fastlmm.util.pickle_io import save, load
 from fastlmm.association.LocoGwas import FastGwas
+from fastlmm.association import single_snp
 from fastlmm.util.runner import Local, Hadoop2, LocalMultiProc
 from fastlmm.util.util import argintersect_left
 from fastlmm.util import distributed_map
 from fastlmm.feature_selection.feature_selection_two_kernel import FeatureSelectionInSample
 
+
+from pysnptools.standardizer import DiagKtoN
+
 import split_data_helper
 
 import semisynth_simulations
-
-
 
 
 
@@ -278,11 +280,6 @@ def generate_phenotype(snp_data, causal_idx, genetic_var, noise_var):
     """
     generate phenotype given genotype
     
-    (no causals on first chromosome)
-    
-    ===== ===== ===== ... =====
-            x x   x x      xx
-    
     
     """
     
@@ -303,20 +300,22 @@ def generate_phenotype(snp_data, causal_idx, genetic_var, noise_var):
     y = XW + Z
     y = y[:,0]
 
-    causal = causal_idx
-
-    # read-only
-    W.flags.writeable = False
-    XW.flags.writeable = False
-    Z.flags.writeable = False
-    causal.flags.writeable = False
-
     return y
 
 
 def compute_core(input_tuple):
-
-
+    """
+    Leave-two-chromosome-out evaluation scheme:
+    Chr1: no causals, used for T1-error evaluation
+    Chr2: has causals, not conditioned on, used for power evaluation
+    Rest: has causals, conditioned on
+    
+      T1   Pow  [     cond     ] 
+    ===== ===== ===== .... =====
+            x x   x x      xx
+    
+    """
+    
     snp_fn, eigen_fn, num_causal, sim_id = input_tuple
 
     # handle indices
@@ -362,7 +361,7 @@ def compute_core(input_tuple):
 
     # run feature selection
     #########################################################
-    delta = None
+    delta = 1.0
     result = {}
     fs_result = {}
 
@@ -370,33 +369,45 @@ def compute_core(input_tuple):
     #for method_name, method_function in methods_dict.items():
     #    result[method_name] = method_function(G_test, )
     
+    # generate pheno data structure
+    pheno = {"iid": snp_data.iid, "vals": y, "header": []}
+    covar = {"iid": snp_data.iid, "vals": G_pc_norm, "header": []}
+    
     # subset readers
-    G0 = snp_reader[:,rest_idx].read(order='C').standardize()
-    test_snps = snp_reader[:,test_idx].read(order='C').standardize()
+    G0 = snp_data[:,rest_idx]
+    test_snps = snp_data[:,test_idx]
 
-    single_snp(test_snps, pheno, G0=None, G1=None, mixing=0.0, #!!test mixing and G1
+    # invoke GWAS
+    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar, log_delta=np.log(delta)).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
+    
     # full kernel
-    gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=None, mixing=0.0)
-    gwas.run_gwas()
-    result["full"] = gwas.p_values
-
-    # linear regression with causals as covariates
-    from fastlmm.inference.linear_regression import f_regression_cov
-    _, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
-
-    _, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
-    
-    
-    """
     # causal snps
     G_train_unnorm = G.take(rest_idx, axis=1)
     G_train_unnorm.flags.writeable = False
-    G_train = 1./np.sqrt(G_train_unnorm.shape[1]) * G_train_unnorm
+    G_train = DiagKtoN(G_train_unnorm.shape[0]).standardize(G_train_unnorm.copy())
+    #G_train = 1./np.sqrt(G_train_unnorm.shape[1]) * G_train_unnorm
     G_train.flags.writeable = False
 
     G_test = G.take(test_idx, axis=1)
     G_test.flags.writeable = False
     
+    gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=G_pc_norm, mixing=0.0)
+    gwas.run_gwas()
+    result["full_old"] = gwas.p_values
+    #
+    import pylab
+    pylab.plot(np.log(result["full"]), np.log(result["full_old"]), "x")
+    pylab.show()
+    
+    import pdb; pdb.set_trace()
+    np.testing.assert_array_almost_equal(result["full"], result["full_old"])
+    #TODO: implement linear regression with same interface as single_snp
+    # linear regression with causals as covariates
+    #from fastlmm.inference.linear_regression import f_regression_cov
+    #_, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
+    #_, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
+    
+    """
     
     # fs conditioned on full kernel
     select = FeatureSelectionInSample(max_log_k=7, order_by_lmm=True)
@@ -440,8 +451,7 @@ def compute_core(input_tuple):
     gwas.run_gwas()
     result["fs_all_pcs_cov"] = gwas.p_values
 
-    """ 
-
+    
     """ 
 
 
@@ -479,4 +489,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
