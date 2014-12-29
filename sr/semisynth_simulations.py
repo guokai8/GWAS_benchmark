@@ -34,45 +34,6 @@ import semisynth_simulations
 
 
 
-def create_feature_selection_distributable(snp_reader, phen_fn, pc_fn, num_pcs_kernel, output_prefix, snp_idx, cov_fn=None, include_all=True):
-
-        snp_reader_subset = snp_reader[:,snp_idx]
-
-        from fastlmm.feature_selection import FeatureSelectionStrategy
-        import fastlmm.feature_selection.PerformSelectionDistributable as psd
-
-        # set up paramters
-        num_folds = 10
-        random_state = 42
-        num_snps_in_memory = 1000000
-
-        ##############################
-        num_steps_delta = 7
-        num_steps_k = 7
-        num_steps_mix = 7
-
-        # log_2 space and all SNPs
-        
-        k_values = [int(k) for k in np.logspace(0, 10, base=2, num=num_steps_k, endpoint=True)]
-        if include_all:
-            k_values.append(len(snp_idx))
-        delta_values = np.logspace(-5, 10, endpoint=True, num=num_steps_delta, base=np.exp(1))
-        mix_values = np.linspace(0.0, 1.0, num=num_steps_mix, endpoint=True)
-
-        if pc_fn is None:
-            assert num_pcs_kernel == 0
-            logging.info("feature selection: no PCs specified, disabling loop over mixing parameter")
-            mix_values = np.array([0.0])
-
-        strategy = "insample_cv"
-        select_by_ll = True
-
-        # go!
-        feature_selector = FeatureSelectionStrategy(snp_reader_subset, phen_fn, num_folds, random_state=random_state, num_snps_in_memory=num_snps_in_memory, interpolate_delta=False, cov_fn=cov_fn)
-        perform_selection_distributable = psd.PerformSelectionDistributable(feature_selector, k_values, delta_values, strategy, output_prefix, select_by_ll)
-
-        return perform_selection_distributable
-
 
 class LeaveTwoChrOutSimulation():
 
@@ -382,90 +343,6 @@ def compute_core(input_tuple):
     
     return result, indices
 
-
-def execute_lmm(test_snps, pheno, G0, covar):
-    
-    result = {}
-    fs_result = {}
-    
-    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
-
-    # linear regression with causals as covariates
-    from fastlmm.inference.linear_regression import f_regression_cov
-    G_test = test_snps.read().standardize().val    
-    _, result["linreg"] = f_regression_cov(G_test.copy(), pheno["vals"].copy(), np.ones((len(pheno["vals"]),1)))
-    _, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), pheno["vals"].copy(), covar["vals"].copy())
-    
-    return result, fs_result
-    
-    
-def execute_fs_methods():
-    
-    print "TODO"    
-    """
-    # invoke GWAS
-
-    G = snp_reader.read().standardize().val
-
-    # full kernel
-    # causal snps
-    G_train_unnorm = G.take(rest_idx, axis=1)
-    G_train_unnorm.flags.writeable = False
-    G_train = DiagKtoN(G_train_unnorm.shape[0]).standardize(G_train_unnorm.copy())
-    #G_train = 1./np.sqrt(G_train_unnorm.shape[1]) * G_train_unnorm
-    G_train.flags.writeable = False
-
-    G_test = G.take(test_idx, axis=1)
-    G_test.flags.writeable = False
-    
-    
-    gwas = FastGwas(G_train, G_test, y, delta=delta, cov=np.hstack((covar['vals'].copy(),np.ones((len(snp_reader.iid), 1)))), mixing=0.0)
-    gwas.run_gwas()
-    result["full_old"] = gwas.p_values_F
-    
-    # fs conditioned on full kernel
-    select = FeatureSelectionInSample(max_log_k=7, order_by_lmm=True)
-
-    fs_result["insample_cond_full"] = select.run_select(G_train_unnorm, G_train_unnorm, y, cov=G_pc_norm)
-    best_k, fs_idx, best_mix, best_delta = fs_result["insample_cond_full"]
-    print "best_k:", best_k, ", best_mix:", best_mix
-    G_fs = G_train_unnorm.take(fs_idx, axis=1)
-    G_fs *= 1./np.sqrt(best_k)
-    G_fs.flags.writeable = False
-
-    gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=G_fs, mixing=best_mix)
-    gwas.run_gwas()
-    result["full_fs_low"] = gwas.p_values
-    
-    
-    # fs unconditioned
-    ########################
-    out_fn = "tmp_pheno_%i.txt" % (sim_id)
-    out_data = pd.DataFrame({"id1": snp_reader.iid[:,0], "id2": snp_reader.iid[:,1], "y": y})
-    out_data.to_csv(out_fn, sep=" ", header=False, index=False)
-    
-    from pysnptools.snpreader import Bed
-    fsd = create_feature_selection_distributable(Bed(snp_fn), out_fn, None, 0, "fs_out", snp_idx=rest_idx, include_all=True)
-    fs_result["result_uncond_all"] = Local().run(fsd)
-    best_k, best_delta, best_obj, best_snps = fs_result["result_uncond_all"]
-    int_snp_idx = argintersect_left(snp_reader.sid[rest_idx], best_snps)
-    fs_idx = np.array(rest_idx)[int_snp_idx]
-    
-    G_fs = G.take(fs_idx, axis=1)
-    G_fs = 1./np.sqrt(G_fs.shape[1]) * G_fs
-    G_fs.flags.writeable = False
-    
-    # fs all
-    gwas = FastGwas(G_fs, G_test, y, delta=delta, train_pcs=None, mixing=0.0)
-    gwas.run_gwas()
-    result["fs_all"] = gwas.p_values
-
-    # fs cov pcs
-    gwas = FastGwas(G_fs, G_test, y, delta=delta, train_pcs=None, mixing=0.0, cov=G_pc_norm)
-    gwas.run_gwas()
-    result["fs_all_pcs_cov"] = gwas.p_values
-    
-    """ 
 
 def draw_roc_curve(fpr, tpr, roc_auc, label):
     
