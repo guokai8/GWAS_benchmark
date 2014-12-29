@@ -4,7 +4,9 @@ import numpy as np
 import scipy as sp
 import logging
 import pysnptools.util as pstutil
-from pysnptools.snpreader import SnpData
+from pysnptools.snpreader import SnpData, Bed, Dat
+
+
 
 def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sibs_per_family=10,freq_pop_0=.5):
     """Generates a random :class:`.SnpData`
@@ -118,13 +120,43 @@ def _generate_kids(parent_snps, family_count, sibs_per_family): #!!! should it b
     return snps
 
 
+from pysnptools.snpreader import SnpReader
+
+def encode_snp(entry):
+    if entry == 0:
+        return "A A"
+    elif entry == 1:
+        return "A C"
+    elif entry == 2:
+        return "C C"
+
+def write_tped(snpdata, basefilename):
+    #\\bobd02\Public\PLink\x64\Plink.exe --noweb --tfile test --make-bed --out test2
+    
+    
+    SnpReader._write_fam(snpdata, basefilename, remove_suffix="tped")
+    #SnpReader._write_map_or_bim(snpdata, basefilename, remove_suffix="dat", add_suffix="map")
+
+    snpsarray = snpdata.val
+    with open(basefilename,"w") as dat_filepointer:
+        for sid_index, sid in enumerate(snpdata.sid):
+            if sid_index % 1000 == 0:
+                logging.info("Writing snp # {0} to file '{1}'".format(sid_index, basefilename))
+            dat_filepointer.write("1 {0} {1} {1} ".format(sid ,sid_index)) #use "j" and "n" as the major and minor allele
+            row = snpsarray[:,sid_index]
+            dat_filepointer.write(" ".join((encode_snp(i) for i in row)) + "\n")
+    logging.info("Done writing " + basefilename)
+    
+    
+
 if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    snpdata = snp_gen(fst=.1,dfr=.1,iid_count=100,sid_count=1000)
-    print snpdata
-
+    snpdata = snp_gen(fst=0.005, dfr=0.5, iid_count=25000, sid_count=25000)
+    
+    Bed.write(snpdata, "25k")
+    #write_tped(snpdata, "test.tped")
 
     import doctest
     doctest.testmod()
