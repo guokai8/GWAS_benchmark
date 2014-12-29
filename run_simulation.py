@@ -22,10 +22,13 @@ def main():
     #print "using snps", snp_fn
     runner = Local()
 
-    num_causals = 10
-    num_repeats = 1000
+    import time
+    t0 = time.time()
+    num_causals = 1000
+    num_repeats = 1
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
     sc.run(num_causals, num_repeats, "mouse_", runner)
+    print "time taken", time.time() - t0
 
 if __name__ == "__main__":
     main()

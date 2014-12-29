@@ -366,6 +366,28 @@ def compute_core(input_tuple):
     result = {}
     fs_result = {}
 
+    # ideally, we would make it work this way:
+    #for method_name, method_function in methods_dict.items():
+    #    result[method_name] = method_function(G_test, )
+    
+    # subset readers
+    G0 = snp_reader[:,rest_idx].read(order='C').standardize()
+    test_snps = snp_reader[:,test_idx].read(order='C').standardize()
+
+    single_snp(test_snps, pheno, G0=None, G1=None, mixing=0.0, #!!test mixing and G1
+    # full kernel
+    gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=None, mixing=0.0)
+    gwas.run_gwas()
+    result["full"] = gwas.p_values
+
+    # linear regression with causals as covariates
+    from fastlmm.inference.linear_regression import f_regression_cov
+    _, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
+
+    _, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
+    
+    
+    """
     # causal snps
     G_train_unnorm = G.take(rest_idx, axis=1)
     G_train_unnorm.flags.writeable = False
@@ -376,15 +398,6 @@ def compute_core(input_tuple):
     G_test.flags.writeable = False
     
     
-    
-    # full kernel
-    gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=None, mixing=0.0)
-    gwas.run_gwas()
-    result["full"] = gwas.p_values
-
-    
-    
-    """
     # fs conditioned on full kernel
     select = FeatureSelectionInSample(max_log_k=7, order_by_lmm=True)
 
@@ -428,20 +441,10 @@ def compute_core(input_tuple):
     result["fs_all_pcs_cov"] = gwas.p_values
 
     """ 
-    # external mix selection
-    for mix in [0.25, 0.5, 0.75]:
-        gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=G_fs, mixing=mix, cov=G_pc_norm)
-        gwas.run_gwas()
-        result["full_fs_pc_cov_mix=%f" % (mix)] = gwas.p_values
-     
+
     """ 
 
-    # linear regression with causals as covariates
-    from fastlmm.inference.linear_regression import f_regression_cov
-    _, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
 
-    _, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
-    
     # save indices
     indices = {"causal_idx": causal_idx, "chr1_idx": chr1_idx, "chr2_idx": chr2_idx, "input_tuple": input_tuple, "fs_result": fs_result}
     #test_idx
