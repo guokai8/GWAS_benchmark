@@ -323,7 +323,7 @@ def compute_core(input_tuple):
     from pysnptools.snpreader import Bed
     snp_reader = Bed(snp_fn)
     snp_data = snp_reader.read(order='C').standardize()
-    G = snp_data.val
+    G = snp_data.val.copy()
     G.flags.writeable = False
 
     # determine indices for generation and evaluation
@@ -342,6 +342,8 @@ def compute_core(input_tuple):
     noise_var = 0.5
 
     y = generate_phenotype(snp_data, causal_idx, genetic_var, noise_var)
+    y -= y.mean()
+    y /= y.std()
     y.flags.writeable = False
 
 
@@ -361,7 +363,7 @@ def compute_core(input_tuple):
 
     # run feature selection
     #########################################################
-    delta = 1.0
+    delta = None
     result = {}
     fs_result = {}
 
@@ -378,7 +380,6 @@ def compute_core(input_tuple):
     test_snps = snp_data[:,test_idx]
 
     # invoke GWAS
-    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar, log_delta=np.log(delta)).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
     
     # full kernel
     # causal snps
@@ -391,15 +392,25 @@ def compute_core(input_tuple):
     G_test = G.take(test_idx, axis=1)
     G_test.flags.writeable = False
     
-    gwas = FastGwas(G_train, G_test, y, delta=delta, train_pcs=G_pc_norm, mixing=0.0)
+    G_train2 = G0.read().standardize()
+    G_train2 = DiagKtoN(G_train2.val.shape[0]).standardize(G_train2.val)
+    
+    G_test2 = test_snps.read().standardize().val
+    
+    import pdb; pdb.set_trace()
+    gwas = FastGwas(G_train2, G_test2, y, delta=delta, cov=np.hstack((covar['vals'].copy(),np.ones((len(snp_data.iid), 1)))), mixing=0.0)
     gwas.run_gwas()
-    result["full_old"] = gwas.p_values
+    result["full_old"] = gwas.p_values_F
+    
+
+    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
+    
     #
     import pylab
     pylab.plot(np.log(result["full"]), np.log(result["full_old"]), "x")
+    pylab.plot(range(-10,0), range(-10, 0), "-r")
     pylab.show()
     
-    import pdb; pdb.set_trace()
     np.testing.assert_array_almost_equal(result["full"], result["full_old"])
     #TODO: implement linear regression with same interface as single_snp
     # linear regression with causals as covariates
