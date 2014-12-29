@@ -314,7 +314,7 @@ def compute_core(input_tuple):
     
     """
     
-    snp_fn, eigen_fn, num_causal, sim_id = input_tuple
+    snp_fn, eigen_fn, num_causal, sim_id, methods_dict = input_tuple
     
     # partially load bed file
     from pysnptools.snpreader import Bed
@@ -358,12 +358,7 @@ def compute_core(input_tuple):
     # run feature selection
     #########################################################
     delta = None
-    result = {}
-    fs_result = {}
-
-    # ideally, we would make it work this way:
-    #for method_name, method_function in methods_dict.items():
-    #    result[method_name] = method_function(G_test, )
+    
     
     # generate pheno data structure
     pheno = {"iid": snp_reader.iid, "vals": y, "header": []}
@@ -372,7 +367,45 @@ def compute_core(input_tuple):
     # subset readers
     G0 = snp_reader[:,rest_idx]
     test_snps = snp_reader[:,test_idx]
+    
 
+    result = {}
+    fs_result = {}
+
+    for method_name, method_function in methods_dict.items():
+        result_, fs_result_ = method_function(test_snps, pheno, G0, covar)
+        result.update(result_)
+        fs_result.update(fs_result_)
+    
+
+    # save indices
+    indices = {"causal_idx": causal_idx, "chr1_idx": chr1_idx, "chr2_idx": chr2_idx, "input_tuple": input_tuple, "fs_result": fs_result}
+    #test_idx
+    
+    return result, indices
+
+
+def execute_lmm(test_snps, pheno, G0, covar):
+    
+    result = {}
+    fs_result = {}
+    
+    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
+
+
+    #TODO: implement linear regression with same interface as single_snp
+    # linear regression with causals as covariates
+    #from fastlmm.inference.linear_regression import f_regression_cov
+    #_, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
+    #_, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
+    
+    return result, fs_result
+    
+    
+def execute_fs_methods():
+    
+    print "TODO"    
+    """
     # invoke GWAS
 
     G = snp_reader.read().standardize().val
@@ -392,26 +425,6 @@ def compute_core(input_tuple):
     gwas = FastGwas(G_train, G_test, y, delta=delta, cov=np.hstack((covar['vals'].copy(),np.ones((len(snp_reader.iid), 1)))), mixing=0.0)
     gwas.run_gwas()
     result["full_old"] = gwas.p_values_F
-    
-
-    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
-
-
-    import pylab
-    pylab.plot(np.log(result["full"]), np.log(result["full_old"]), "x")
-    pylab.plot(range(-10,0), range(-10, 0), "-r")
-    pylab.show()
-    
-    np.testing.assert_array_almost_equal(np.log(result["full"]), np.log(result["full_old"]))
-    
-    import pdb; pdb.set_trace()
-    #TODO: implement linear regression with same interface as single_snp
-    # linear regression with causals as covariates
-    #from fastlmm.inference.linear_regression import f_regression_cov
-    #_, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
-    #_, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
-    
-    """
     
     # fs conditioned on full kernel
     select = FeatureSelectionInSample(max_log_k=7, order_by_lmm=True)
@@ -457,14 +470,7 @@ def compute_core(input_tuple):
     
     """ 
 
-
-    # save indices
-    indices = {"causal_idx": causal_idx, "chr1_idx": chr1_idx, "chr2_idx": chr2_idx, "input_tuple": input_tuple, "fs_result": fs_result}
-    #test_idx
     
-    return result, indices
-
-
 
 def compute_kernel_diag_from_G(G):
     # diag(K) = diag(G^TG) = \sum_{i,j) G_{i,j}^2
@@ -488,7 +494,7 @@ def main():
     num_causals = 10
     num_repeats = 5
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
-    sc.run(num_causals, num_repeats, "mouse_", runner)
+    sc.run(snp_fn, out_prefix, num_causals, num_repeats, "mouse_", runner)
 
 if __name__ == "__main__":
     main()
