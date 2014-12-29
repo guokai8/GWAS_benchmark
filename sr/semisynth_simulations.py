@@ -279,8 +279,6 @@ def combine_results(input_tuple):
 def generate_phenotype(snp_data, causal_idx, genetic_var, noise_var):
     """
     generate phenotype given genotype
-    
-    
     """
     
     
@@ -317,14 +315,10 @@ def compute_core(input_tuple):
     """
     
     snp_fn, eigen_fn, num_causal, sim_id = input_tuple
-
-    # handle indices
-    ###################################################################
+    
+    # partially load bed file
     from pysnptools.snpreader import Bed
     snp_reader = Bed(snp_fn)
-    snp_data = snp_reader.read(order='C').standardize()
-    G = snp_data.val.copy()
-    G.flags.writeable = False
 
     # determine indices for generation and evaluation
     ##################################################################
@@ -341,7 +335,7 @@ def compute_core(input_tuple):
     genetic_var = 0.5
     noise_var = 0.5
 
-    y = generate_phenotype(snp_data, causal_idx, genetic_var, noise_var)
+    y = generate_phenotype(Bed(snp_fn).read(order='C').standardize(), causal_idx, genetic_var, noise_var)
     y -= y.mean()
     y /= y.std()
     y.flags.writeable = False
@@ -372,15 +366,17 @@ def compute_core(input_tuple):
     #    result[method_name] = method_function(G_test, )
     
     # generate pheno data structure
-    pheno = {"iid": snp_data.iid, "vals": y, "header": []}
-    covar = {"iid": snp_data.iid, "vals": G_pc_norm, "header": []}
+    pheno = {"iid": snp_reader.iid, "vals": y, "header": []}
+    covar = {"iid": snp_reader.iid, "vals": G_pc_norm, "header": []}
     
     # subset readers
-    G0 = snp_data[:,rest_idx]
-    test_snps = snp_data[:,test_idx]
+    G0 = snp_reader[:,rest_idx]
+    test_snps = snp_reader[:,test_idx]
 
     # invoke GWAS
-    
+
+    G = snp_reader.read().standardize().val
+
     # full kernel
     # causal snps
     G_train_unnorm = G.take(rest_idx, axis=1)
@@ -392,26 +388,23 @@ def compute_core(input_tuple):
     G_test = G.take(test_idx, axis=1)
     G_test.flags.writeable = False
     
-    G_train2 = G0.read().standardize()
-    G_train2 = DiagKtoN(G_train2.val.shape[0]).standardize(G_train2.val)
     
-    G_test2 = test_snps.read().standardize().val
-    
-    import pdb; pdb.set_trace()
-    gwas = FastGwas(G_train2, G_test2, y, delta=delta, cov=np.hstack((covar['vals'].copy(),np.ones((len(snp_data.iid), 1)))), mixing=0.0)
+    gwas = FastGwas(G_train, G_test, y, delta=delta, cov=np.hstack((covar['vals'].copy(),np.ones((len(snp_reader.iid), 1)))), mixing=0.0)
     gwas.run_gwas()
     result["full_old"] = gwas.p_values_F
     
 
     result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
-    
-    #
+
+
     import pylab
     pylab.plot(np.log(result["full"]), np.log(result["full_old"]), "x")
     pylab.plot(range(-10,0), range(-10, 0), "-r")
     pylab.show()
     
-    np.testing.assert_array_almost_equal(result["full"], result["full_old"])
+    np.testing.assert_array_almost_equal(np.log(result["full"]), np.log(result["full_old"]))
+    
+    import pdb; pdb.set_trace()
     #TODO: implement linear regression with same interface as single_snp
     # linear regression with causals as covariates
     #from fastlmm.inference.linear_regression import f_regression_cov
@@ -461,7 +454,6 @@ def compute_core(input_tuple):
     gwas = FastGwas(G_fs, G_test, y, delta=delta, train_pcs=None, mixing=0.0, cov=G_pc_norm)
     gwas.run_gwas()
     result["fs_all_pcs_cov"] = gwas.p_values
-
     
     """ 
 
