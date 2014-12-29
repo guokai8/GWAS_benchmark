@@ -145,14 +145,14 @@ class LeaveTwoChrOutSimulation():
             logging.info("pc file already exists: %s" % (self.eigen_fn))
 
 
-    def run(self, num_causal, num_repeats, description, runner, plot_fn=None):
+    def run(self, methods, num_causal, num_repeats, num_pcs, description, runner, plot_fn=None):
         
         assert os.path.exists(self.cache_dir), "path does not exist %s" % (self.cache_dir)
         
         self.precompute_pca()
 
         input_files = [self.snp_fn + ext for ext in [".bed", ".fam", ".bim"]] + [self.eigen_fn]
-        input_args = [(self.snp_fn, self.eigen_fn, num_causal, sim_id) for sim_id in range(num_repeats)]
+        input_args = [(methods, self.snp_fn, self.eigen_fn, num_causal, num_pcs, sim_id) for sim_id in range(num_repeats)]
         output_list = distributed_map.d_map(semisynth_simulations.compute_core, input_args, runner, input_files=input_files)
 
         ############################################
@@ -185,20 +185,15 @@ def visualized_reduced_results(methods, combine_output, title="", plot_fn=None):
         fig = pylab.figure()
         for mi, method in enumerate(methods):
             o = combine_output[mi]
-            pylab.subplot(221)
-            gw.draw_roc_curve(o["roc"][0], o["roc"][1], o["roc"][2], method)
-
-            pylab.subplot(222)
-            gw.draw_prc_curve(o["prc"][0], o["prc"][1], o["prc"][2], method)
-
-            pylab.subplot(223)
-            #pylab.subplot(111)
+            pylab.subplot(131)
             gw.draw_t1err_curve(o["t1err"][0], o["t1err"][1], method, o["num_trials"])
 
-        
-            pylab.subplot(224)
-            #gw.draw_power_curve(o["power"][0], o["power"][1], method)
-            gw.draw_power_curve(o["t1err"][1], o["power"][1], method)
+            pylab.subplot(132)
+            draw_roc_curve(o["roc"][0], o["roc"][1], o["roc"][2], method)
+
+            pylab.subplot(133)
+            gw.draw_prc_curve(o["prc"][0], o["prc"][1], o["prc"][2], method)
+
 
         pylab.suptitle(title)
 
@@ -314,7 +309,7 @@ def compute_core(input_tuple):
     
     """
     
-    snp_fn, eigen_fn, num_causal, sim_id, methods_dict = input_tuple
+    methods, snp_fn, eigen_fn, num_causal, num_pcs, sim_id = input_tuple
     
     # partially load bed file
     from pysnptools.snpreader import Bed
@@ -348,10 +343,11 @@ def compute_core(input_tuple):
     G_pc = eig_dec["pcs"]
     G_pc.flags.writeable = False
 
-    num_pcs = 5
     G_pc_ = G_pc[:,0:num_pcs]
-    
     G_pc_norm = 1./np.sqrt(compute_kernel_diag_from_G(G_pc_) / float(G_pc_.shape[0])) * G_pc_
+    G_pc_norm2 = DiagKtoN(G_pc_.shape[0]).standardize(G_pc_.copy())
+    
+    np.testing.assert_array_almost_equal(G_pc_norm, G_pc_norm2)
     G_pc_norm.flags.writeable = False
     
 
@@ -372,12 +368,13 @@ def compute_core(input_tuple):
     result = {}
     fs_result = {}
 
-    for method_name, method_function in methods_dict.items():
+    # additional methods can be defined and included in the benchmark
+    for method_function in methods:
+        
         result_, fs_result_ = method_function(test_snps, pheno, G0, covar)
         result.update(result_)
         fs_result.update(fs_result_)
     
-
     # save indices
     indices = {"causal_idx": causal_idx, "chr1_idx": chr1_idx, "chr2_idx": chr2_idx, "input_tuple": input_tuple, "fs_result": fs_result}
     #test_idx
@@ -470,7 +467,25 @@ def execute_fs_methods():
     
     """ 
 
+def draw_roc_curve(fpr, tpr, roc_auc, label):
     
+    if len(fpr) > 1000:
+        sub_idx = [int(a) for a in np.linspace(0, len(fpr)-1, num=1000, endpoint=True)]
+        fpr, tpr = fpr[sub_idx], tpr[sub_idx]
+
+    import pylab
+    #pylab.semilogx(fpr, tpr, label='%s (area = %0.4f)' % (label, roc_auc))
+    pylab.semilogx(fpr, tpr, label=label)
+    #pylab.plot([0, 1], [0, 1], 'k--')
+    pylab.xlim([0.0, 1.0])
+    pylab.ylim([0.0, 1.0])
+    #pylab.xlabel('False Positive Rate')
+    pylab.xlabel('type I error',fontsize="large")
+    #pylab.ylabel('True Positive Rate (Power)')
+    pylab.ylabel('power',fontsize="large")
+    #pylab.title('Receiver operating characteristic example')
+    pylab.grid(True)
+    pylab.legend(loc="lower right")
 
 def compute_kernel_diag_from_G(G):
     # diag(K) = diag(G^TG) = \sum_{i,j) G_{i,j}^2
@@ -491,10 +506,15 @@ def main():
     #runner = LocalMultiProc(20)
     runner = Local()
 
-    num_causals = 10
+    num_causals = 500
     num_repeats = 5
+    num_pcs = 5
+    
+    # make this a tumple of function and kwargs
+    methods = {execute_lmm}
+    
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
-    sc.run(snp_fn, out_prefix, num_causals, num_repeats, "mouse_", runner)
+    sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
 
 if __name__ == "__main__":
     main()
