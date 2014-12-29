@@ -175,14 +175,15 @@ class LeaveTwoChrOutSimulation():
         
         save(reduced_results_fn, combine_output)
         title = "%i causal, %i repeats" % (num_causal, num_repeats)
-        visualized_reduced_results(methods, combine_output, title=title, plot_fn=plot_fn)
+        visualize_reduced_results(methods, combine_output, title=title, plot_fn=plot_fn)
 
 
-def visualized_reduced_results(methods, combine_output, title="", plot_fn=None):
+def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
 
         t0 = time.time()
 
         fig = pylab.figure()
+        fig.set_size_inches(6,12.5)
         for mi, method in enumerate(methods):
             o = combine_output[mi]
             pylab.subplot(131)
@@ -202,7 +203,7 @@ def visualized_reduced_results(methods, combine_output, title="", plot_fn=None):
         if plot_fn is None:
             pylab.show()
         else:
-            fig.set_size_inches(12.5,12.5)
+            
             pylab.savefig(plot_fn, dpi=100)
 
 
@@ -389,12 +390,11 @@ def execute_lmm(test_snps, pheno, G0, covar):
     
     result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
 
-
-    #TODO: implement linear regression with same interface as single_snp
     # linear regression with causals as covariates
-    #from fastlmm.inference.linear_regression import f_regression_cov
-    #_, result["linreg"] = f_regression_cov(G_test.copy(), y.copy(), np.ones((len(y),1)))
-    #_, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), y.copy(), G_pc_norm.copy())
+    from fastlmm.inference.linear_regression import f_regression_cov
+    G_test = test_snps.read().standardize().val    
+    _, result["linreg"] = f_regression_cov(G_test.copy(), pheno["vals"].copy(), np.ones((len(pheno["vals"]),1)))
+    _, result["linreg_cov_pcs"] = f_regression_cov(G_test.copy(), pheno["vals"].copy(), covar["vals"].copy())
     
     return result, fs_result
     
@@ -507,7 +507,7 @@ def main():
     runner = Local()
 
     num_causals = 500
-    num_repeats = 5
+    num_repeats = 10
     num_pcs = 5
     
     # make this a tumple of function and kwargs
