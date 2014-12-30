@@ -8,31 +8,20 @@ module to perform semi-synthetic simulations:
 
 import logging
 import os
+import time
+
 import numpy as np
 import scipy as sp
 import pandas as pd
-        
-import time
-
-import fastlmm.association.gwas_eval as gw
 import pylab
 
+import fastlmm.association.gwas_eval as gw
 from fastlmm.util.pickle_io import save, load
-from fastlmm.association.LocoGwas import FastGwas
-from fastlmm.association import single_snp
 from fastlmm.util.runner import Local, Hadoop2, LocalMultiProc
-from fastlmm.util.util import argintersect_left
 from fastlmm.util import distributed_map
-from fastlmm.feature_selection.feature_selection_two_kernel import FeatureSelectionInSample
-
-
 from pysnptools.standardizer import DiagKtoN
-
 import split_data_helper
-
 import semisynth_simulations
-
-
 
 
 class LeaveTwoChrOutSimulation():
@@ -76,8 +65,6 @@ class LeaveTwoChrOutSimulation():
         """
         compute pcs
         """
-        
-
 
         logging.info("computing PCA on train set")
         t0 = time.time()
@@ -117,10 +104,6 @@ class LeaveTwoChrOutSimulation():
         output_list = distributed_map.d_map(semisynth_simulations.compute_core, input_args, runner, input_files=input_files)
 
         ############################################
-        # power
-        #indices = {"causal_idx": causal_idx, "chr1_idx": chr1_idx, "chr2_idx": chr2_idx}
-
-        
         results_fn = "results/%s_results.runs_%i.causals_%i.pickle.bzip" % (description, num_repeats, num_causal)
         reduced_results_fn = results_fn.replace("runs", "reduced.runs")
 
@@ -140,6 +123,9 @@ class LeaveTwoChrOutSimulation():
 
 
 def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
+        """
+        set up plots: T1-error, ROC, PRC
+        """
 
         t0 = time.time()
 
@@ -169,16 +155,17 @@ def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
 
 
 def combine_results(input_tuple):
-
+    """
+    compute performance statistics from p-values of method
+    """
+    
     method, results_fn = input_tuple
 
     logging.info("reading file: %s" % results_fn)
     output_list = load(results_fn)
 
     p_values_all = []
-    mask_all = []
-
-    
+    mask_all = []    
 
     p_values_all = []
     p_values_chr1 = []
@@ -238,11 +225,8 @@ def generate_phenotype(snp_data, causal_idx, genetic_var, noise_var):
     generate phenotype given genotype
     """
     
-    
     num_causal = len(causal_idx)
-    
     num_phenotypes = 1
-
     mean = 0.0
     X = snp_data.val.copy()
     X.flags.writeable = False
@@ -309,6 +293,7 @@ def compute_core(input_tuple):
     G_pc_norm = 1./np.sqrt(compute_kernel_diag_from_G(G_pc_) / float(G_pc_.shape[0])) * G_pc_
     G_pc_norm2 = DiagKtoN(G_pc_.shape[0]).standardize(G_pc_.copy())
     
+    import pdb; pdb.set_trace()
     np.testing.assert_array_almost_equal(G_pc_norm, G_pc_norm2)
     G_pc_norm.flags.writeable = False
     
@@ -345,29 +330,44 @@ def compute_core(input_tuple):
 
 
 def draw_roc_curve(fpr, tpr, roc_auc, label):
+    """
+    draw semi-log-scaled ROC curve
+    """
     
     if len(fpr) > 1000:
         sub_idx = [int(a) for a in np.linspace(0, len(fpr)-1, num=1000, endpoint=True)]
         fpr, tpr = fpr[sub_idx], tpr[sub_idx]
 
-    import pylab
+
     #pylab.semilogx(fpr, tpr, label='%s (area = %0.4f)' % (label, roc_auc))
     pylab.semilogx(fpr, tpr, label=label)
     #pylab.plot([0, 1], [0, 1], 'k--')
     pylab.xlim([0.0, 1.0])
     pylab.ylim([0.0, 1.0])
     #pylab.xlabel('False Positive Rate')
-    pylab.xlabel('type I error',fontsize="large")
+    pylab.xlabel('type I error', fontsize="large")
     #pylab.ylabel('True Positive Rate (Power)')
-    pylab.ylabel('power',fontsize="large")
+    pylab.ylabel('power', fontsize="large")
     #pylab.title('Receiver operating characteristic example')
     pylab.grid(True)
     pylab.legend(loc="lower right")
 
+
+def execute_lmm(test_snps, pheno, G0, covar):
+    """
+    hook lmm into benchmark tool
+    """
+    
+    result = {}
+    fs_result = {}
+    
+    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
+
+    return result, fs_result
+
 def compute_kernel_diag_from_G(G):
     # diag(K) = diag(G^TG) = \sum_{i,j) G_{i,j}^2
     return (G**2).sum()
-
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -388,6 +388,7 @@ def main():
     num_pcs = 5
     
     # make this a tumple of function and kwargs
+    #from sr.methods import execute_lmm, execute_linear_regression
     methods = {execute_lmm}
     
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
