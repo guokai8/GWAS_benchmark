@@ -74,7 +74,7 @@ class LeaveTwoChrOutSimulation():
 
             G = self.snp_reader.read(order='C').standardize().val
             G.flags.writeable = False
-            chr1_idx, chr2_idx, rest_idx = split_data_helper.split_chr1_chr2_rest(snp_reader.pos)
+            chr1_idx, chr2_idx, rest_idx = split_data_helper.split_chr1_chr2_rest(self.snp_reader.pos)
 
             G_train = G.take(rest_idx, axis=1)
 
@@ -344,6 +344,11 @@ def draw_roc_curve(fpr, tpr, roc_auc, label):
 
 
 
+def run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner):
+    sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
+    sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
+    
+    
 def main():
     logging.basicConfig(level=logging.INFO)
     
@@ -366,8 +371,8 @@ def main():
     from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
     methods = [execute_fs, execute_linear_regression]
     
-    sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
-    sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
+    run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner)
+    
 
 if __name__ == "__main__":
     main()
