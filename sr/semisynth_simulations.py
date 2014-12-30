@@ -1,6 +1,6 @@
 """
 module to perform semi-synthetic simulations:
-- take real snps
+- take snps
 - simulate phenotypes
 - perform GWAS with different methods
 - measure performance
@@ -28,10 +28,8 @@ class LeaveTwoChrOutSimulation():
 
     def __init__(self, snp_fn, out_prefix):
 
-
         self.random_state = 42
         self.force_recompute = False
-        self.mindist = 50
 
         #self.base_path = base_path
         self.snp_fn = snp_fn
@@ -40,25 +38,9 @@ class LeaveTwoChrOutSimulation():
         self.snp_reader = Bed(snp_fn)
         
         self.cache_dir =  "data/"
-
-        self.eigen_fn = self.cache_dir + "pcs.pickle"
-        self.pc_prefix = self.cache_dir + "pcs"
-
-        self.phen_string = "phen_sanity"
-        self.phen_prefix = self.cache_dir + self.phen_string
+        self.eigen_fn = self.snp_fn + "_pcs.pickle"
 
         self.out_prefix = out_prefix
-
-        self.simulator = None
-        self.pc_selector = None
-        self.feature_selector = None
-        self.gwas = None
-
-        # get from pc file
-        self.S = None
-        self.U = None
-
-        self.p_values = None
 
 
     def precompute_pca(self):
@@ -130,7 +112,7 @@ def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
         t0 = time.time()
 
         fig = pylab.figure()
-        fig.set_size_inches(24,8)
+        fig.set_size_inches(26,7)
         for mi, method in enumerate(methods):
             o = combine_output[mi]
             pylab.subplot(131)
