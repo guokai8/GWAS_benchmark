@@ -130,7 +130,7 @@ def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
         t0 = time.time()
 
         fig = pylab.figure()
-        fig.set_size_inches(6,12.5)
+        fig.set_size_inches(24,8)
         for mi, method in enumerate(methods):
             o = combine_output[mi]
             pylab.subplot(131)
