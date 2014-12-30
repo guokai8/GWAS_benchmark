@@ -1,6 +1,6 @@
 """
 module to perform semi-synthetic simulations:
-- take real snps
+- take snps
 - simulate phenotypes
 - perform GWAS with different methods
 - measure performance
@@ -28,10 +28,8 @@ class LeaveTwoChrOutSimulation():
 
     def __init__(self, snp_fn, out_prefix):
 
-
         self.random_state = 42
         self.force_recompute = False
-        self.mindist = 50
 
         #self.base_path = base_path
         self.snp_fn = snp_fn
@@ -40,25 +38,9 @@ class LeaveTwoChrOutSimulation():
         self.snp_reader = Bed(snp_fn)
         
         self.cache_dir =  "data/"
-
-        self.eigen_fn = self.cache_dir + "pcs.pickle"
-        self.pc_prefix = self.cache_dir + "pcs"
-
-        self.phen_string = "phen_sanity"
-        self.phen_prefix = self.cache_dir + self.phen_string
+        self.eigen_fn = self.snp_fn + "_pcs.pickle"
 
         self.out_prefix = out_prefix
-
-        self.simulator = None
-        self.pc_selector = None
-        self.feature_selector = None
-        self.gwas = None
-
-        # get from pc file
-        self.S = None
-        self.U = None
-
-        self.p_values = None
 
 
     def precompute_pca(self):
@@ -74,7 +56,7 @@ class LeaveTwoChrOutSimulation():
 
             G = self.snp_reader.read(order='C').standardize().val
             G.flags.writeable = False
-            chr1_idx, chr2_idx, rest_idx = split_data_helper.split_chr1_chr2_rest(snp_reader.pos)
+            chr1_idx, chr2_idx, rest_idx = split_data_helper.split_chr1_chr2_rest(self.snp_reader.pos)
 
             G_train = G.take(rest_idx, axis=1)
 
@@ -130,7 +112,7 @@ def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
         t0 = time.time()
 
         fig = pylab.figure()
-        fig.set_size_inches(6,12.5)
+        fig.set_size_inches(26,7)
         for mi, method in enumerate(methods):
             o = combine_output[mi]
             pylab.subplot(131)
@@ -344,6 +326,11 @@ def draw_roc_curve(fpr, tpr, roc_auc, label):
 
 
 
+def run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner):
+    sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
+    sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
+    
+    
 def main():
     logging.basicConfig(level=logging.INFO)
     
@@ -366,8 +353,8 @@ def main():
     from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
     methods = [execute_fs, execute_linear_regression]
     
-    sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
-    sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
+    run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner)
+    
 
 if __name__ == "__main__":
     main()
