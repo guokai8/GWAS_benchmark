@@ -277,8 +277,6 @@ def compute_core(input_tuple):
     noise_var = 0.5
 
     y = generate_phenotype(Bed(snp_fn).read(order='C').standardize(), causal_idx, genetic_var, noise_var)
-    y -= y.mean()
-    y /= y.std()
     y.flags.writeable = False
 
 
@@ -345,17 +343,6 @@ def draw_roc_curve(fpr, tpr, roc_auc, label):
     pylab.legend(loc="lower right")
 
 
-def execute_lmm(test_snps, pheno, G0, covar):
-    """
-    hook lmm into benchmark tool
-    """
-    
-    result = {}
-    fs_result = {}
-    
-    result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
-
-    return result, fs_result
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -376,8 +363,8 @@ def main():
     num_pcs = 5
     
     # make this a tumple of function and kwargs
-    #from sr.methods import execute_lmm, execute_linear_regression
-    methods = {execute_lmm}
+    from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
+    methods = [execute_fs, execute_linear_regression]
     
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
     sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
