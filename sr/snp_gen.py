@@ -8,7 +8,7 @@ from pysnptools.snpreader import SnpData, Bed, Dat
 
 
 
-def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sibs_per_family=10,freq_pop_0=.5):
+def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sibs_per_family=10,freq_pop_0=.5,chr_count=None):
     """Generates a random :class:`.SnpData`
 
     :param fst: Degree of Population Structure, e.g. 0 (a special case), 0.005, 0.01, 0.05, 0.1
@@ -68,7 +68,11 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
 
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
     sid = np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
-    pos = np.array(list([sid_index,0,0] for sid_index in xrange(len(sid)))) # every snp has position 0,0 on its own chrom
+
+    if chr_count == None:
+        chr_count == len(sid)
+    sid_per_chrom = int(sp.ceil(float(len(sid))/chr_count))
+    pos = np.array(list([1+sid_index//sid_per_chrom, 1+sid_index%sid_per_chrom, 1+sid_index%sid_per_chrom] for sid_index in xrange(len(sid))))
 
     snpdata = SnpData(iid, sid, pos, val, 
                       parent_string="snp_gen(fst={0}, dfr={1}, iid_count={2}, sid_count={3}, maf_low={4}, maf_high={5}, seed={6}, sibs_per_family={7}, freq_pop_0={8})"
@@ -153,7 +157,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    snpdata = snp_gen(fst=0.005, dfr=0.5, iid_count=25000, sid_count=25000)
+    snpdata = snp_gen(fst=0.005, dfr=0.5, iid_count=100, sid_count=1000,chr_count=11)
     
     Bed.write(snpdata, "25k")
     #write_tped(snpdata, "test.tped")
