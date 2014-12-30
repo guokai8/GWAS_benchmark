@@ -38,8 +38,12 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     :param freq_pop_0: (default .5) Fraction of individuals in population 0 (the rest will be in population 1)
     :type freq_pop_0: float
 
-    :rtype: :class:`.SnpData`
+    :param chr_count: (default one chromosome per SNP) Number of chromosomes to which SNPs should be assigned. The SNPs will
+    be assigned as evenly as possible. Chromosome names are integers starting with 1. SNP positions within a chromosome are sequential
+    integers starting with 1.
+    :type chr_count: int
 
+    :rtype: :class:`.SnpData`
     :Example:
 
     >>> snpdata = snp_gen(fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=6)
@@ -69,10 +73,14 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     iid = np.array([["i_{0}".format(iid_index),"f_{0}".format(iid_index)] for iid_index in xrange(val.shape[0])])
     sid = np.array(["snp_{0}".format(sid_index) for sid_index in xrange(val.shape[1])])
 
-    if chr_count == None:
-        chr_count == len(sid)
-    sid_per_chrom = int(sp.ceil(float(len(sid))/chr_count))
+    if chr_count is None:
+        chr_count = len(sid)
+
+    assert len(sid) == 0 or chr_count > 0, "chr_count must be at least 1 (unless sid_count is 0)"
+    sid_per_chrom = int(sp.ceil(float(len(sid))/max(1,chr_count)))
     pos = np.array(list([1+sid_index//sid_per_chrom, 1+sid_index%sid_per_chrom, 1+sid_index%sid_per_chrom] for sid_index in xrange(len(sid))))
+    if len(sid) == 0: #make it work when no sids are wanted
+        pos = pos.reshape(len(sid),3)
 
     snpdata = SnpData(iid, sid, pos, val, 
                       parent_string="snp_gen(fst={0}, dfr={1}, iid_count={2}, sid_count={3}, maf_low={4}, maf_high={5}, seed={6}, sibs_per_family={7}, freq_pop_0={8})"

@@ -35,7 +35,7 @@ class TestSnpGen(unittest.TestCase):
     def gen_and_compare(self, output_file, **kwargs):
         gen_snpdata = snp_gen(**kwargs)
         pstutil.create_directory_if_necessary(self.currentFolder + "/tempdir/" + output_file,isfile=True)
-        Bed.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file) #!!!cmk comment out
+        #Bed.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file)  #comment out
         ref_snpdata = Bed(self.currentFolder + "/expected/" + output_file).read()
         assert TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Failure on "+output_file
         return gen_snpdata
@@ -78,6 +78,25 @@ class TestSnpGen(unittest.TestCase):
         ref_snpdata = Bed(self.currentFolder + "/expected/gen2").read()
         assert not TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Expect different seeds to produce different results"
 
+    def test_gen8(self):
+        self.gen_and_compare("gen8a", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,chr_count=3)
+        self.gen_and_compare("gen8b", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,chr_count=4)
+        self.gen_and_compare("gen8c", fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=5,chr_count=6)
+
+    def test_gensmall(self):
+        #Just checking that doesn't generate errors
+        for iid_count in [10, 5, 3, 2, 1, 0]:
+            for sid_count in [0, 10, 5, 3, 2, 1]:
+                for chr_count in [30, 10, 5, 3, 2, 1, 0]:
+                    if chr_count == 0 and sid_count > 0:
+                        continue # not break
+                    logging.debug("{0}, {1}, {2}".format(iid_count, sid_count, chr_count))
+                    snpdata = snp_gen(fst=.1,dfr=.5,iid_count=iid_count,sid_count=sid_count,maf_low=.05,seed=6,chr_count=chr_count)
+                    assert snpdata.iid_count <= iid_count
+                    assert snpdata.sid_count == sid_count
+                    assert len(snpdata.pos) == 0 or max(snpdata.pos[:,0]) <= chr_count
+                    assert len(snpdata.pos) == 0 or max(snpdata.pos[:,1]) <= int(max(1,np.ceil(float(sid_count) / chr_count)))
+                    assert len(snpdata.pos) == 0 or max(snpdata.pos[:,2]) <= int(max(1,np.ceil(float(sid_count) / chr_count)))
 
 def getTestSuite():
     """
