@@ -290,11 +290,7 @@ def compute_core(input_tuple):
     G_pc.flags.writeable = False
 
     G_pc_ = G_pc[:,0:num_pcs]
-    G_pc_norm = 1./np.sqrt(compute_kernel_diag_from_G(G_pc_) / float(G_pc_.shape[0])) * G_pc_
-    G_pc_norm2 = DiagKtoN(G_pc_.shape[0]).standardize(G_pc_.copy())
-    
-    import pdb; pdb.set_trace()
-    np.testing.assert_array_almost_equal(G_pc_norm, G_pc_norm2)
+    G_pc_norm = DiagKtoN(G_pc_.shape[0]).standardize(G_pc_.copy())
     G_pc_norm.flags.writeable = False
     
 
@@ -364,10 +360,6 @@ def execute_lmm(test_snps, pheno, G0, covar):
     result["full"] = single_snp(test_snps, pheno, G0=G0, covar=covar).sort(["Chr", "ChrPos"])["PValue"].as_matrix()
 
     return result, fs_result
-
-def compute_kernel_diag_from_G(G):
-    # diag(K) = diag(G^TG) = \sum_{i,j) G_{i,j}^2
-    return (G**2).sum()
 
 def main():
     logging.basicConfig(level=logging.INFO)
