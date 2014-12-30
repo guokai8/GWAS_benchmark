@@ -296,9 +296,7 @@ def compute_core(input_tuple):
 
     # run feature selection
     #########################################################
-    delta = None
-    
-    
+
     # generate pheno data structure
     pheno = {"iid": snp_reader.iid, "vals": y, "header": []}
     covar = {"iid": snp_reader.iid, "vals": G_pc_norm, "header": []}
@@ -307,13 +305,11 @@ def compute_core(input_tuple):
     G0 = snp_reader[:,rest_idx]
     test_snps = snp_reader[:,test_idx]
     
-
     result = {}
     fs_result = {}
 
     # additional methods can be defined and included in the benchmark
     for method_function in methods:
-        
         result_, fs_result_ = method_function(test_snps, pheno, G0, covar)
         result.update(result_)
         fs_result.update(fs_result_)
