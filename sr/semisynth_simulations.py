@@ -349,7 +349,7 @@ def main():
     num_repeats = 10
     num_pcs = 5
     
-    # make this a tumple of function and kwargs
+    # make this a tuple of function and kwargs
     from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
     methods = [execute_fs, execute_linear_regression]
     
