@@ -47,8 +47,9 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     :Example:
 
     >>> snpdata = snp_gen(fst=.1,dfr=.5,iid_count=200,sid_count=20,maf_low=.05,seed=6)
-    >>> print snpdata.iid_count, snpdata.sid_count #because of rounding got 190 individuals
-    190, 20
+    >>> print int(snpdata.iid_count), int(snpdata.sid_count) #because of rounding got 190 individuals
+    190 20
+
     """
     assert 0 <= freq_pop_0 and freq_pop_0 <=1.0,"assert 0 <= freq_pop_0 and freq_pop_0 <=1.0"
 

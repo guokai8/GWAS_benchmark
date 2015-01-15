@@ -3,8 +3,14 @@ import os.path
 
 from sr.semisynth_simulations import run_simulation
 from fastlmm.util.runner import Local
-
 import numpy as np
+from sr.semisynth_simulations import generate_discrete_ascertained
+from pysnptools.snpreader import Bed
+import pysnptools.util as pstutil
+from sr.tests.test_snp_gen import TestSnpGen
+import doctest
+from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
+
 
 
 def compare_np_arrays(lhs, rhs):
@@ -45,7 +51,8 @@ class TestSemiSynth(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        pass
+        self.currentFolder = os.path.dirname(os.path.realpath(__file__))
+
 
     def test_all(self):
         import fastlmm.util.runner as runner
@@ -74,6 +81,35 @@ class TestSemiSynth(unittest.TestCase):
             co = load("%s%s.bzip" % (expected_prefix, name))
             
             compare_nested(combine_output, co)
+
+    def compare(self, gen_snpdata, pheno, output_file):
+        assert len(pheno) % 2 == 0 # even number of iids
+        assert np.all(pheno[:len(pheno)//2] == 0) #first half are controls
+        assert np.all(pheno[len(pheno)//2:] == 1) #second half are cases
+        #pstutil.create_directory_if_necessary(self.currentFolder + "/tempdir/" + output_file,isfile=True) #comment out
+        #Bed.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file)  #comment out
+        ref_snpdata = Bed(self.currentFolder + "/expected/" + output_file).read()
+        assert TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Failure on "+output_file
+
+
+    def test_generate_discrete_ascertained_1(self):
+        for prevalence in [.5, .01,.1]:
+            for sid_count in [2, 200,20,1,0]:
+                for iid_count in [2,1000, 100,10,1,0]:
+                    #print prevalence, sid_count, iid_count
+                    snp_args = {"fst":.1,"dfr":.5,"sid_count":sid_count,"maf_low":.05}
+                    phenotype_args = {"causals":sid_count//10,"genetic_var":0.5, "noise_var":0.5}
+                    snps,pheno = generate_discrete_ascertained(prevalence=prevalence,iid_count=iid_count,seed=5,snp_args=snp_args,phenotype_args=phenotype_args)
+                    output_file = "gda.{0}_{1}_{2}".format(prevalence,sid_count,iid_count)
+                    self.compare(snps,pheno,output_file)
+
+    def test_doc_test(self):
+        import sr.semisynth_simulations
+        old_dir = os.getcwd()
+        os.chdir(os.path.dirname(os.path.realpath(__file__))+"/..")
+        result = doctest.testmod(sr.semisynth_simulations)
+        os.chdir(old_dir)
+        assert result.failed == 0, "failed doc test: " + __file__
 
 
 

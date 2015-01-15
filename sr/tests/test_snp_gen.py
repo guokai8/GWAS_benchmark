@@ -34,7 +34,7 @@ class TestSnpGen(unittest.TestCase):
 
     def gen_and_compare(self, output_file, **kwargs):
         gen_snpdata = snp_gen(**kwargs)
-        pstutil.create_directory_if_necessary(self.currentFolder + "/tempdir/" + output_file,isfile=True)
+        #pstutil.create_directory_if_necessary(self.currentFolder + "/tempdir/" + output_file,isfile=True)
         #Bed.write(gen_snpdata, self.currentFolder + "/tempdir/" + output_file)  #comment out
         ref_snpdata = Bed(self.currentFolder + "/expected/" + output_file).read()
         assert TestSnpGen.is_same(gen_snpdata, ref_snpdata), "Failure on "+output_file
@@ -98,6 +98,15 @@ class TestSnpGen(unittest.TestCase):
                     assert len(snpdata.pos) == 0 or max(snpdata.pos[:,1]) <= int(max(1,np.ceil(float(sid_count) / chr_count)))
                     assert len(snpdata.pos) == 0 or max(snpdata.pos[:,2]) <= int(max(1,np.ceil(float(sid_count) / chr_count)))
 
+    def test_doc_test(self):
+        import sr
+        import sys
+        old_dir = os.getcwd()
+        os.chdir(os.path.dirname(os.path.realpath(__file__))+"/..")
+        result = doctest.testmod(sys.modules['sr.snp_gen'])
+        os.chdir(old_dir)
+        assert result.failed == 0, "failed doc test: " + __file__
+
 def getTestSuite():
     """
     set up test suite
@@ -110,22 +119,5 @@ def getTestSuite():
 if __name__ == '__main__':
 
     suites = getTestSuite()
-    if True:
-        # TestFeatureSelection().test_aaa_hdf5_speed()
-        r = unittest.TextTestRunner(failfast=False)
-        r.run(suites)
-    else: #Cluster test run
-        task_count = 500
-        runner = HPC(task_count, 'RR1-N13-09-H44',r'\\msr-arrays\Scratch\msr-pool\Scratch_Storage6\Redmond',
-                     remote_python_parent=r"\\msr-arrays\Scratch\msr-pool\Scratch_Storage6\REDMOND\carlk\Source\carlk\july_7_14\pythonpath",
-                     update_remote_python_parent=True,
-                     min=150,
-                     priority="AboveNormal",mkl_num_threads=1)
-        runner = Local()
-        #runner = LocalMultiProc(taskcount=4,mkl_num_threads=5)
-        #runner = LocalInParts(1,2,mkl_num_threads=1) # For debugging the cluster runs
-        #runner = Hadoop2(100, mapmemory=8*1024, reducememory=8*1024, mkl_num_threads=1, queue="default")
-        distributable_test = DistributableTest(suites,"temp_test")
-        print runner.run(distributable_test)
-
-
+    r = unittest.TextTestRunner(failfast=False)
+    r.run(suites)

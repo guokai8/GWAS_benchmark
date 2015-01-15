@@ -26,6 +26,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="cluster_data.py" />
+    <Compile Include="methods.py" />
     <Compile Include="semisynth_simulations.py" />
     <Compile Include="snp_gen.py">
       <SubType>Code</SubType>

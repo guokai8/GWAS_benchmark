@@ -202,12 +202,23 @@ def combine_results(input_tuple):
 
 
 
-def generate_phenotype(snp_data, causal_idx, genetic_var, noise_var):
+def generate_phenotype(snp_data, causals, genetic_var, noise_var, seed=None):
     """
     generate phenotype given genotype
+
+    'causals' can be either an array of indexes to the causal snps or the number of causal snps desired.
     """
+
+    if seed is not None:
+        np.random.seed(seed)
     
-    num_causal = len(causal_idx)
+    try:
+        num_causal = len(causals)
+        causal_idx = causals
+    except:
+        num_causal = causals
+        causal_idx = np.random.choice(sp.arange(snp_data.sid_count),size=num_causal,replace=False)
+
     num_phenotypes = 1
     mean = 0.0
     X = snp_data.val.copy()
@@ -222,6 +233,75 @@ def generate_phenotype(snp_data, causal_idx, genetic_var, noise_var):
     y = y[:,0]
 
     return y
+
+def generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_args, seed=0):
+    """
+    Generate discrete ascertained data. Internally, case will be generated at the requested
+    prevalence. Before returning, however, the control will randomly sampled so 
+    that in the returned data, case and control have number of examples.
+
+    :param prevalence: Prior probability of a case, e.g. .1
+    :type prevalence: a float between 0.0 and 1.0 (exclusive)
+
+    :param iid_count: The number of examples desired in the returned data. Because of
+    rounding during data generate the actual number may be lower. Of this happens,
+    a warning will be shown.
+    :type iid_count: int
+
+    :param snp_args: arguments for an internal call to :func:`sr.snp_gen`. Do not include
+    'iid_count' or 'seed'
+    :type snp_args: dictionary
+
+    :param phenotype_args: arguments for an internal call to :func:`.generate_phenotype`. Do not include
+    'snp_count' or 'seed'
+    :type phenotype_args: dictionary
+
+    :param seed: a random seed to control random number generation
+    :type seed: int
+
+    :rtype: a :class:`pysnptools.snpreader.SnpData' of genotype data and a nparray of 0,1 phenotype values.
+
+    :Example:
+
+    >>> snp_args = {"fst":.1,"dfr":.5,"sid_count":200,"maf_low":.05}
+    >>> phenotype_args = {"causals":10,"genetic_var":0.5, "noise_var":0.5}
+    >>> snps,pheno = generate_discrete_ascertained(prevalence=.1,iid_count=100,seed=5,snp_args=snp_args,phenotype_args=phenotype_args)
+    >>> print int(snps.val.shape[0]),int(snps.val.shape[1]),int(len(pheno))
+    98 200 98
+
+    """
+    assert 0<prevalence and prevalence <= .5, "Expect prevalence to be between 0.0 (exclusive) and .5 (inclusive)"
+    assert int(iid_count) == iid_count and iid_count >= 0, "Expect iid_count to be a non-negative integer"
+
+    # generate more examples than we ultimately want
+    iid_count2 = int(float(iid_count) / 2.0 / prevalence)
+    from sr import snp_gen
+    snp2 = snp_gen(iid_count=iid_count2, seed=seed, **snp_args)
+    pheno2 = generate_phenotype(snp_data=snp2, seed=seed, **phenotype_args)
+
+    # Sort by snps by pheno2 value
+    snps2_sorted = snp2[pheno2.argsort(),:]
+
+    # we want the top snp_count*prevalence for cases
+    # and a random sample, of the same size, from the rest for control
+    case_count = int(snps2_sorted.iid_count * prevalence)
+    case_index = range(-1,-(case_count+1),-1) # e.g. if case_count is 3, then -1,-2,-3
+    control_count = case_count
+
+    if control_count + case_count != iid_count:
+        logging.warn("iid_count is {0} instead of {1} because of rounding".format(control_count + case_count, iid_count))
+
+    np.random.seed(seed)
+    control_index = np.random.choice(np.arange(snps2_sorted.iid_count-case_count), control_count, replace=False)
+    
+    snp_final = snps2_sorted[np.concatenate((control_index,case_index)),:].read()
+    pheno_final = np.zeros(control_count+case_count)
+    pheno_final[control_count:]=1
+
+    return snp_final, pheno_final
+
+
+
 
 
 def compute_core(input_tuple):

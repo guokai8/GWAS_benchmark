@@ -115,7 +115,7 @@ def create_feature_selection_distributable(snp_reader, phen_fn, pc_fn, num_pcs_k
         from fastlmm.feature_selection import FeatureSelectionStrategy
         import fastlmm.feature_selection.PerformSelectionDistributable as psd
 
-        # set up paramters
+        # set up parameters
         num_folds = 10
         random_state = 42
         num_snps_in_memory = 1000000
