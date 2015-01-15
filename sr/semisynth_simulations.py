@@ -28,7 +28,7 @@ class LeaveTwoChrOutSimulation():
 
     def __init__(self, snp_fn, out_prefix):
 
-        self.random_state = 42
+
         self.force_recompute = False
 
         #self.base_path = base_path
@@ -37,7 +37,6 @@ class LeaveTwoChrOutSimulation():
         from pysnptools.snpreader import Bed
         self.snp_reader = Bed(snp_fn)
         
-        self.cache_dir =  "data/"
         self.eigen_fn = self.snp_fn + "_pcs.pickle"
 
         self.out_prefix = out_prefix
@@ -50,8 +49,7 @@ class LeaveTwoChrOutSimulation():
 
         logging.info("computing PCA on train set")
         t0 = time.time()
-        assert os.path.exists(self.cache_dir)
-
+        
         if not os.path.isfile(self.eigen_fn) or self.force_recompute:
 
             G = self.snp_reader.read(order='C').standardize().val
@@ -75,18 +73,17 @@ class LeaveTwoChrOutSimulation():
             logging.info("pc file already exists: %s" % (self.eigen_fn))
 
 
-    def run(self, methods, num_causal, num_repeats, num_pcs, description, runner, plot_fn=None):
+    def run(self, methods, num_causal, num_repeats, num_pcs, description, runner, seed=None, plot_fn=None):
         
-        assert os.path.exists(self.cache_dir), "path does not exist %s" % (self.cache_dir)
         
         self.precompute_pca()
 
         input_files = [self.snp_fn + ext for ext in [".bed", ".fam", ".bim"]] + [self.eigen_fn]
-        input_args = [(methods, self.snp_fn, self.eigen_fn, num_causal, num_pcs, sim_id) for sim_id in range(num_repeats)]
+        input_args = [(methods, self.snp_fn, self.eigen_fn, num_causal, num_pcs, seed, sim_id) for sim_id in range(num_repeats)]
         output_list = distributed_map.d_map(semisynth_simulations.compute_core, input_args, runner, input_files=input_files)
 
         ############################################
-        results_fn = "results/%s_results.runs_%i.causals_%i.pickle.bzip" % (description, num_repeats, num_causal)
+        results_fn = "%s_results.runs_%i.causals_%i.pickle.bzip" % (description, num_repeats, num_causal)
         reduced_results_fn = results_fn.replace("runs", "reduced.runs")
 
         save(results_fn, output_list)
@@ -103,6 +100,8 @@ class LeaveTwoChrOutSimulation():
         title = "%i causal, %i repeats" % (num_causal, num_repeats)
         visualize_reduced_results(methods, combine_output, title=title, plot_fn=plot_fn)
 
+        return combine_output
+    
 
 def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
         """
@@ -130,9 +129,10 @@ def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
         print "time taken to draw figure", time.time()-t0
 
         if plot_fn is None:
+            print "showing figure!"
             pylab.show()
         else:
-            
+            print "saving figure!"
             pylab.savefig(plot_fn, dpi=100)
 
 
@@ -237,7 +237,7 @@ def compute_core(input_tuple):
     
     """
     
-    methods, snp_fn, eigen_fn, num_causal, num_pcs, sim_id = input_tuple
+    methods, snp_fn, eigen_fn, num_causal, num_pcs, seed, sim_id = input_tuple
     
     # partially load bed file
     from pysnptools.snpreader import Bed
@@ -251,6 +251,10 @@ def compute_core(input_tuple):
     # only compute t1-error (condition on all chr with causals on them)
     #causal_candidates_idx = rest_idx
     test_idx = np.concatenate((chr1_idx, chr2_idx))
+    
+    if seed is not None:
+        np.random.seed(seed)
+    
     causal_idx = np.random.permutation(causal_candidates_idx)[0:num_causal]
     
     # generate phenotype
@@ -326,9 +330,9 @@ def draw_roc_curve(fpr, tpr, roc_auc, label):
 
 
 
-def run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner):
+def run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner, plot_fn=None, seed=None):
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
-    sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner)
+    return sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner, seed=seed, plot_fn=plot_fn)
     
     
 def main():
@@ -339,6 +343,7 @@ def main():
     snp_fn = "data/mouse/alldata"
     out_prefix = "results/mouse_"
 
+    description = "test_run"
     queue = "shared"
     #runner = Hadoop2(200, mapmemory=40*1024, reducememory=90*1024, mkl_num_threads=4, queue=queue)
     print "using snps", snp_fn
@@ -346,7 +351,7 @@ def main():
     runner = Local()
 
     num_causals = 500
-    num_repeats = 10
+    num_repeats = 3
     num_pcs = 5
     
     # make this a tuple of function and kwargs
