@@ -101,7 +101,80 @@ class LeaveTwoChrOutSimulation():
         visualize_reduced_results(methods, combine_output, title=title, plot_fn=plot_fn)
 
         return combine_output
+
+
+
+def simulate_ascertained(methods, prevalence, iid_count, num_causal, num_repeats, description, snp_args, phenotype_args, runner=Local(), seed=None, plot_fn=None):
+    """
+    run a synthetic simulation using ascertained data
     
+    :param methods: A list of functions implementing methods to be compared.
+    :type methods: list<function>
+    
+    :param prevalence: Prior probability of a case, e.g. .1
+    :type prevalence: a float between 0.0 and 1.0 (exclusive)
+       
+    :param iid_count: The number of individuals to generate.
+    :type iid_count: int
+     
+    :param num_causal: The number causal SNPs in the simulation.
+    :type num_causal: int
+
+    :param num_repeats: The number of repeats in the simulation.
+    :type num_repeats: int
+
+    :param description: Short description string of experiment (for output)
+    :type description: str
+    
+    :param num_repeats: The number of repeats in the simulation.
+    :type num_repeats: int
+
+    :param snp_args: arguments for an internal call to :func:`sr.snp_gen`. Do not include
+    'iid_count' or 'seed'
+    :type snp_args: dictionary
+
+    :param phenotype_args: arguments for an internal call to :func:`.generate_phenotype`. Do not include
+    'snp_count' or 'seed'
+    :type phenotype_args: dictionary
+
+    :param runner: a Runner object (e.g. Local, Hadoop, HPC)
+    :type runner: Runner
+
+    :param seed: a random seed to control random number generation
+    :type seed: int
+
+    :param plot_fn: filename under which to save the output figure
+    :type plot_fn: str
+
+    """    
+
+    
+    input_args = [(methods, num_causal, prevalence, iid_count, snp_args, phenotype_args, seed, sim_id) for sim_id in range(num_repeats)]
+    output_list = distributed_map.d_map(semisynth_simulations.compute_core_ascertained, input_args, runner)
+
+
+    ############################################
+    results_fn = "%s_ascertained_results.runs_%i.causals_%i.pickle.bzip" % (description, num_repeats, num_causal)
+    reduced_results_fn = results_fn.replace("runs", "reduced.runs")
+
+    save(results_fn, output_list)
+
+    
+    methods = output_list[0][0].keys()
+    arg_list = [(method, results_fn) for method in methods]
+
+    combine_output = distributed_map.d_map(semisynth_simulations.combine_results, arg_list, Local(), input_files=[results_fn])
+    
+    save(reduced_results_fn, combine_output)
+    title = "%i causal, %i repeats" % (num_causal, num_repeats)
+    visualize_reduced_results(methods, combine_output, title=title, plot_fn=plot_fn)
+
+    return combine_output
+
+
+
+#TODO: create a different subclass for ascertained data
+# call the other subclass existing phenotype
 
 def visualize_reduced_results(methods, combine_output, title="", plot_fn=None):
         """
@@ -234,6 +307,7 @@ def generate_phenotype(snp_data, causals, genetic_var, noise_var, seed=None):
 
     return y
 
+
 def generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_args, seed=0):
     """
     Generate discrete ascertained data. Internally, case will be generated at the requested
@@ -317,6 +391,8 @@ def compute_core(input_tuple):
     
     """
     
+    
+    
     methods, snp_fn, eigen_fn, num_causal, num_pcs, seed, sim_id = input_tuple
     
     # partially load bed file
@@ -344,6 +420,9 @@ def compute_core(input_tuple):
 
     y = generate_phenotype(Bed(snp_fn).read(order='C').standardize(), causal_idx, genetic_var, noise_var)
     y.flags.writeable = False
+
+
+    ############### only alter part until here --> modularize this
 
 
     # load pcs
@@ -385,6 +464,78 @@ def compute_core(input_tuple):
     return result, indices
 
 
+def compute_core_ascertained(input_tuple):
+    """
+    Leave-two-chromosome-out evaluation scheme:
+    Chr1: no causals, used for T1-error evaluation
+    Chr2: has causals, not conditioned on, used for power evaluation
+    Rest: has causals, conditioned on
+    
+      T1   Pow  [     cond     ] 
+    ===== ===== ===== .... =====
+            x x   x x      xx
+    
+    """
+    
+    methods, num_causal, prevalence, iid_count, snp_args, phenotype_args, seed, sim_id = input_tuple
+
+    
+    
+    # determine indices for generation and evaluation
+    ##################################################################
+    chr1_idx, chr2_idx, rest_idx = range(0,1000), range(1000, 2000), range(2000, 10000)
+    
+    causal_candidates_idx = np.concatenate((chr2_idx, rest_idx))
+    # only compute t1-error (condition on all chr with causals on them)
+    test_idx = np.concatenate((chr1_idx, chr2_idx))
+    
+    if seed is not None:
+        np.random.seed(seed)
+    
+    causal_idx = np.random.permutation(causal_candidates_idx)[0:num_causal]
+    
+    
+    
+    # generate phenotype
+    ###################################################################
+    #y = generate_phenotype(Bed(snp_fn).read(order='C').standardize(), causal_idx, genetic_var, noise_var)
+    #y.flags.writeable = False
+
+    phenotype_args["causals"] = causal_idx
+    
+    #import pdb; pdb.set_trace()
+    
+    snp_reader, y = generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_args, seed=seed)
+
+
+    # run feature selection
+    #########################################################
+
+    # generate pheno data structure
+    pheno = {"iid": snp_reader.iid, "vals": y, "header": []}
+    covar = {"iid": snp_reader.iid, "vals": np.ones((len(y),1)), "header": []}
+    
+    # subset readers
+    G0 = snp_reader[:,rest_idx]
+    test_snps = snp_reader[:,test_idx]
+    
+    result = {}
+    fs_result = {}
+
+    # additional methods can be defined and included in the benchmark
+    for method_function in methods:
+        result_, fs_result_ = method_function(test_snps, pheno, G0, covar)
+        result.update(result_)
+        fs_result.update(fs_result_)
+    
+    # save indices
+    indices = {"causal_idx": causal_idx, "chr1_idx": chr1_idx, "chr2_idx": chr2_idx, "input_tuple": input_tuple, "fs_result": fs_result}
+    #test_idx
+    
+    return result, indices
+
+
+
 def draw_roc_curve(fpr, tpr, roc_auc, label):
     """
     draw semi-log-scaled ROC curve
@@ -414,7 +565,24 @@ def run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pc
     sc = LeaveTwoChrOutSimulation(snp_fn, out_prefix)
     return sc.run(methods, num_causals, num_repeats, num_pcs, "mouse_", runner, seed=seed, plot_fn=plot_fn)
     
+
+def run_simulation_ascertained():
+
+    snp_args = {"fst": 0.2, "dfr": 0.1, "sid_count": 10000}
+    phenotype_args = {"genetic_var": 0.5, "noise_var": 0.5}
+        # make this a tuple of function and kwargs
+    from sr.methods import execute_lmm, execute_linear_regression
+    methods = [execute_lmm] #, execute_linear_regression]
     
+    prevalence = 0.2
+    num_causal = 20
+    num_repeats = 50
+    iid_count= 500
+    description = "ascertained"
+    
+    simulate_ascertained(methods, prevalence, iid_count, num_causal, num_repeats, description, snp_args, phenotype_args) 
+
+
 def main():
     logging.basicConfig(level=logging.INFO)
     
@@ -442,4 +610,5 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    run_simulation_ascertained()
+    #main()
