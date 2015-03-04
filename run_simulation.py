@@ -6,7 +6,7 @@ module to perform semi-synthetic simulations:
 - measure performance
 """
 
-from sr.semisynth_simulations import run_simulation
+from GWAS_benchmark.semisynth_simulations import run_simulation
 from fastlmm.util.runner import Local
 
 
@@ -23,7 +23,7 @@ def main():
     num_pcs = 5
     
     # make this a tuple of function and kwargs
-    from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
+    from GWAS_benchmark.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
  
     for name, method in {"lmm": execute_lmm, "lr": execute_linear_regression, "dual_fs": execute_dual_fs, "fs": execute_fs}.items():
         methods = [method]

@@ -1,15 +1,16 @@
 import unittest
 import os.path
+import sys
 
-from sr.semisynth_simulations import run_simulation
+from GWAS_benchmark.semisynth_simulations import run_simulation
 from fastlmm.util.runner import Local
 import numpy as np
-from sr.semisynth_simulations import generate_discrete_ascertained
+from GWAS_benchmark.semisynth_simulations import generate_discrete_ascertained
 from pysnptools.snpreader import Bed
 import pysnptools.util as pstutil
-from sr.tests.test_snp_gen import TestSnpGen
+from GWAS_benchmark.tests.test_snp_gen import TestSnpGen
 import doctest
-from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
+from GWAS_benchmark.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
 
 
 
@@ -70,7 +71,7 @@ class TestSemiSynth(unittest.TestCase):
         num_pcs = 5
         
         # make this a tuple of function and kwargs
-        from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
+        from GWAS_benchmark.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
         methods_dict = {"lmm": execute_lmm, "lr": execute_linear_regression, "dual_fs": execute_dual_fs, "fs": execute_fs}
         
         for name, method in methods_dict.items():
@@ -104,10 +105,10 @@ class TestSemiSynth(unittest.TestCase):
                     self.compare(snps,pheno,output_file)
 
     def test_doc_test(self):
-        import sr.semisynth_simulations
+        import GWAS_benchmark.semisynth_simulations
         old_dir = os.getcwd()
         os.chdir(os.path.dirname(os.path.realpath(__file__))+"/..")
-        result = doctest.testmod(sr.semisynth_simulations)
+        result = doctest.testmod(GWAS_benchmark.semisynth_simulations)
         os.chdir(old_dir)
         assert result.failed == 0, "failed doc test: " + __file__
 

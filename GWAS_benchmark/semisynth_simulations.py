@@ -9,6 +9,7 @@ module to perform semi-synthetic simulations:
 import logging
 import os
 import time
+import sys
 
 import numpy as np
 import scipy as sp
@@ -129,7 +130,7 @@ def simulate_ascertained(methods, prevalence, iid_count, num_causal, num_repeats
     :param num_repeats: The number of repeats in the simulation.
     :type num_repeats: int
 
-    :param snp_args: arguments for an internal call to :func:`sr.snp_gen`. Do not include
+    :param snp_args: arguments for an internal call to :func:`GWAS_benchmark.snp_gen`. Do not include
     'iid_count' or 'seed'
     :type snp_args: dictionary
 
@@ -322,7 +323,7 @@ def generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_arg
     a warning will be shown.
     :type iid_count: int
 
-    :param snp_args: arguments for an internal call to :func:`sr.snp_gen`. Do not include
+    :param snp_args: arguments for an internal call to :func:`GWAS_benchmark.snp_gen`. Do not include
     'iid_count' or 'seed'
     :type snp_args: dictionary
 
@@ -349,7 +350,7 @@ def generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_arg
 
     # generate more examples than we ultimately want
     iid_count2 = int(float(iid_count) / 2.0 / prevalence)
-    from sr import snp_gen
+    from GWAS_benchmark import snp_gen
     snp2 = snp_gen(iid_count=iid_count2, seed=seed, **snp_args)
     pheno2 = generate_phenotype(snp_data=snp2, seed=seed, **phenotype_args)
 
@@ -571,7 +572,7 @@ def run_simulation_ascertained():
     snp_args = {"fst": 0.2, "dfr": 0.1, "sid_count": 10000}
     phenotype_args = {"genetic_var": 0.5, "noise_var": 0.5}
         # make this a tuple of function and kwargs
-    from sr.methods import execute_lmm, execute_linear_regression
+    from GWAS_benchmark.methods import execute_lmm, execute_linear_regression
     methods = [execute_lmm] #, execute_linear_regression]
     
     prevalence = 0.2
@@ -603,7 +604,7 @@ def main():
     num_pcs = 5
     
     # make this a tuple of function and kwargs
-    from sr.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
+    from GWAS_benchmark.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
     methods = [execute_fs, execute_linear_regression]
     
     run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner)

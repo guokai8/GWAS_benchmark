@@ -8,7 +8,7 @@ import os.path
 import os
 import time
 
-from sr import snp_gen
+from GWAS_benchmark import snp_gen
 from pysnptools.snpreader import Bed
 import pysnptools.util as pstutil
    
@@ -99,11 +99,11 @@ class TestSnpGen(unittest.TestCase):
                     assert len(snpdata.pos) == 0 or max(snpdata.pos[:,2]) <= int(max(1,np.ceil(float(sid_count) / chr_count)))
 
     def test_doc_test(self):
-        import sr
+        import GWAS_benchmark
         import sys
         old_dir = os.getcwd()
         os.chdir(os.path.dirname(os.path.realpath(__file__))+"/..")
-        result = doctest.testmod(sys.modules['sr.snp_gen'])
+        result = doctest.testmod(sys.modules['GWAS_benchmark.snp_gen'])
         os.chdir(old_dir)
         assert result.failed == 0, "failed doc test: " + __file__
 
