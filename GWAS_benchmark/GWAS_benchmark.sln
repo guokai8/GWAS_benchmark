@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "sr", "sr.pyproj", "{6B56C9C9-ACEF-4DC7-831E-E957B1A9F186}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GWAS_benchmark", "GWAS_benchmark.pyproj", "{6B56C9C9-ACEF-4DC7-831E-E957B1A9F186}"
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "tests", "..\tests\tests.pyproj", "{79D8C4A5-0BB8-4667-AB80-7DA829CFD311}"
 EndProject

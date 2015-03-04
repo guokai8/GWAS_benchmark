@@ -17,6 +17,7 @@
     <CommandLineArguments>
     </CommandLineArguments>
     <IsWindowsApplication>False</IsWindowsApplication>
+    <Name>GWAS_benchmark</Name>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
@@ -25,6 +26,9 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\setup.py">
+      <Link>setup\setup.py</Link>
+    </Compile>
     <Compile Include="cluster_data.py" />
     <Compile Include="methods.py" />
     <Compile Include="semisynth_simulations.py" />
@@ -40,25 +44,50 @@
     <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="setup\" />
     <Folder Include="tests\" />
     <Folder Include="tests\expected\" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="tests\expected\gen1.dat" />
+    <Content Include="..\LICENSE.md">
+      <Link>setup\LICENSE.md</Link>
+    </Content>
+    <Content Include="..\README.md">
+      <Link>setup\README.md</Link>
+    </Content>
+    <Content Include="tests\expected\gen1.bed" />
+    <Content Include="tests\expected\gen1.bim" />
     <Content Include="tests\expected\gen1.fam" />
-    <Content Include="tests\expected\gen1.map" />
-    <Content Include="tests\expected\gen2.dat" />
+    <Content Include="tests\expected\gen2.bed" />
+    <Content Include="tests\expected\gen2.bim" />
     <Content Include="tests\expected\gen2.fam" />
-    <Content Include="tests\expected\gen2.map" />
-    <Content Include="tests\expected\gen2b.dat" />
+    <Content Include="tests\expected\gen2b.bed" />
+    <Content Include="tests\expected\gen2b.bim" />
     <Content Include="tests\expected\gen2b.fam" />
-    <Content Include="tests\expected\gen2b.map" />
-    <Content Include="tests\expected\gen3.dat" />
+    <Content Include="tests\expected\gen3.bed" />
+    <Content Include="tests\expected\gen3.bim" />
     <Content Include="tests\expected\gen3.fam" />
-    <Content Include="tests\expected\gen3.map" />
-    <Content Include="tests\expected\gen4.dat" />
+    <Content Include="tests\expected\gen4.bed" />
+    <Content Include="tests\expected\gen4.bim" />
     <Content Include="tests\expected\gen4.fam" />
-    <Content Include="tests\expected\gen4.map" />
+    <Content Include="tests\expected\gen5.bed" />
+    <Content Include="tests\expected\gen5.bim" />
+    <Content Include="tests\expected\gen5.fam" />
+    <Content Include="tests\expected\gen6.bed" />
+    <Content Include="tests\expected\gen6.bim" />
+    <Content Include="tests\expected\gen6.fam" />
+    <Content Include="tests\expected\gen7.bed" />
+    <Content Include="tests\expected\gen7.bim" />
+    <Content Include="tests\expected\gen7.fam" />
+    <Content Include="tests\expected\gen8a.bed" />
+    <Content Include="tests\expected\gen8a.bim" />
+    <Content Include="tests\expected\gen8a.fam" />
+    <Content Include="tests\expected\gen8b.bed" />
+    <Content Include="tests\expected\gen8b.bim" />
+    <Content Include="tests\expected\gen8b.fam" />
+    <Content Include="tests\expected\gen8c.bed" />
+    <Content Include="tests\expected\gen8c.bim" />
+    <Content Include="tests\expected\gen8c.fam" />
   </ItemGroup>
   <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
