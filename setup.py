@@ -23,34 +23,6 @@ def readme():
     with open('README.md') as f:
        return f.read()
 
-
-class CleanCommand(Clean):
-    description = "Remove build directories, and compiled files (including .pyc)"
-
-    def run(self):
-        Clean.run(self)
-        if os.path.exists('build'):
-            shutil.rmtree('build')
-        for dirpath, dirnames, filenames in os.walk('.'):
-            for filename in filenames:
-                if (   filename.endswith('.so')
-                    or filename.endswith('.pyd')
-                    or filename.endswith('.pyc')
-                                ):
-                    tmp_fn = os.path.join(dirpath, filename)
-                    print "removing", tmp_fn
-                    os.unlink(tmp_fn)
-
-# set up macro
-if platform.system() == "Darwin":
-    macros = [("__APPLE__", "1")]
-elif "win" in platform.system().lower():
-    macros = [("_WIN32", "1")]
-else:
-    macros = [("_UNIX", "1")]
-
-ext = []
-
 #python setup.py sdist bdist_wininst upload
 setup(
     name='GWAS_benchmark',
@@ -66,13 +38,6 @@ setup(
         "GWAS_benchmark/tests",
         "GWAS_benchmark",
 	],
-	package_data={
-                 },
     requires = ['numpy', 'scipy', 'pandas', 'sklearn', 'matplotlib', 'pysnptools', 'fastlmm', 'fastcluster'],
-    #zip_safe=False,
-    # extensions
-    cmdclass = {'build_ext': build_ext, 'clean': CleanCommand},
-    ext_modules = ext,
-	include_dirs = [numpy.get_include()]
   )
 
