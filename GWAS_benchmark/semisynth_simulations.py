@@ -366,7 +366,8 @@ def generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_arg
     if control_count + case_count != iid_count:
         logging.warn("iid_count is {0} instead of {1} because of rounding".format(control_count + case_count, iid_count))
 
-    np.random.seed(int(seed % sys.maxint))
+    if seed is not None:
+        np.random.seed(int(seed % sys.maxint))
     control_index = np.random.choice(np.arange(snps2_sorted.iid_count-case_count), control_count, replace=False)
     
     snp_final = snps2_sorted[np.concatenate((control_index,case_index)),:].read()

@@ -38,6 +38,6 @@ setup(
         "GWAS_benchmark/tests",
         "GWAS_benchmark",
 	],
-    requires = ['numpy', 'scipy', 'pandas', 'sklearn', 'matplotlib', 'pysnptools', 'fastlmm', 'fastcluster'],
+    requires = ['numpy', 'scipy', 'pandas', 'scikit-learn', 'matplotlib', 'pysnptools', 'fastlmm', 'fastcluster'],
   )
 

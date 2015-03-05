@@ -53,7 +53,8 @@ def snp_gen(fst, dfr, iid_count, sid_count, maf_low=.05, maf_high=.5, seed=0,sib
     """
     assert 0 <= freq_pop_0 and freq_pop_0 <=1.0,"assert 0 <= freq_pop_0 and freq_pop_0 <=1.0"
 
-    np.random.seed(int(seed % sys.maxint))
+    if seed is not None:
+        np.random.seed(int(seed % sys.maxint))
 
     iid_solo_count = iid_count-iid_count*dfr
     family_count = int(iid_count*dfr/(2 * sibs_per_family))
