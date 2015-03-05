@@ -100,6 +100,7 @@ class TestSemiSynth(unittest.TestCase):
                     #print prevalence, sid_count, iid_count
                     snp_args = {"fst":.1,"dfr":.5,"sid_count":sid_count,"maf_low":.05}
                     phenotype_args = {"causals":sid_count//10,"genetic_var":0.5, "noise_var":0.5}
+                    #print prevalence, iid_count,snp_args,phenotype_args
                     snps,pheno = generate_discrete_ascertained(prevalence=prevalence,iid_count=iid_count,seed=5,snp_args=snp_args,phenotype_args=phenotype_args)
                     output_file = "gda.{0}_{1}_{2}".format(prevalence,sid_count,iid_count)
                     self.compare(snps,pheno,output_file)
