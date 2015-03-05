@@ -293,10 +293,8 @@ def generate_phenotype(snp_data, causals, genetic_var, noise_var, seed=None):
         causal_idx = causals
     except:
         num_causal = causals
-        if num_causal == 0: #a work around because the linux version of np.random.choice doesn't like to select zero items from an empty list
-            causal_idx = np.array([],dtype="int")
-        else:
-            causal_idx = np.random.choice(sp.arange(snp_data.sid_count),size=num_causal,replace=False)
+        #the "if..else" is a work around because the linux version of np.random.choice doesn't like to select zero items from an empty list. We need to call random in either case so that the random seed ends up in the expected state
+        causal_idx = np.random.choice(sp.arange(snp_data.sid_count if num_causal>0 else 1),size=num_causal,replace=False)
 
     num_phenotypes = 1
     mean = 0.0
@@ -374,10 +372,9 @@ def generate_discrete_ascertained(prevalence, iid_count, snp_args, phenotype_arg
     if seed is not None:
         np.random.seed(int(seed % sys.maxint))
     #print "gda", snps2_sorted.iid_count,case_count,control_count
-    if control_count == 0: #a work around because the linux version of np.random.choice doesn't like to select zero items from an empty list
-        control_index = np.array([],dtype="int")
-    else:
-        control_index = np.random.choice(np.arange(snps2_sorted.iid_count-case_count), control_count, replace=False)
+
+    #the "if..else" is a work around because the linux version of np.random.choice doesn't like to select zero items from an empty list. We need to call random in either case so that the random seed ends up in the expected state
+    control_index = np.random.choice(np.arange(snps2_sorted.iid_count-case_count if control_count > 0 else 1), control_count, replace=False)
     
     snp_final = snps2_sorted[np.concatenate((control_index,case_index)),:].read()
     pheno_final = np.zeros(control_count+case_count)
