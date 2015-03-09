@@ -167,9 +167,8 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    snpdata = snp_gen(fst=0.005, dfr=0.5, iid_count=100, sid_count=1000,chr_count=11)
-    
-    Bed.write(snpdata, "25k")
+    #snpdata = snp_gen(fst=0.005, dfr=0.5, iid_count=100, sid_count=1000,chr_count=11)
+    #Bed.write(snpdata, "25k")
     #write_tped(snpdata, "test.tped")
 
     import doctest

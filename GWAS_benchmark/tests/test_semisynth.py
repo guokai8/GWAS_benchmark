@@ -1,6 +1,7 @@
 import unittest
 import os.path
 import sys
+import logging
 
 from GWAS_benchmark.semisynth_simulations import run_simulation
 from fastlmm.util.runner import Local
@@ -54,8 +55,23 @@ class TestSemiSynth(unittest.TestCase):
     def setUpClass(self):
         self.currentFolder = os.path.dirname(os.path.realpath(__file__))
 
+    from GWAS_benchmark.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
 
-    def test_all(self):
+    def test_lmm(self):
+        self.run_sim_and_compare("lmm", execute_lmm)
+
+    def test_lr(self):
+        self.run_sim_and_compare("lr", execute_linear_regression)
+
+    def test_dual_fs(self):
+        self.run_sim_and_compare("dual_fs", execute_dual_fs)
+
+    def test_fs(self):
+        self.run_sim_and_compare("fs", execute_fs)
+
+
+    def run_sim_and_compare(self, name, method):
+        logging.info('in test_all')
         import fastlmm.util.runner as runner
 
         currentFolder = os.path.dirname(os.path.realpath(__file__))
@@ -63,25 +79,20 @@ class TestSemiSynth(unittest.TestCase):
         out_prefix = currentFolder + "/tempdir/mouse_"
 
     
-        description = "test_run"
+        description = "test_run_{0}".format(name)
         runner = Local()
     
         num_causals = 500
         num_repeats = 1
         num_pcs = 5
         
-        # make this a tuple of function and kwargs
-        from GWAS_benchmark.methods import execute_lmm, execute_linear_regression, execute_dual_fs, execute_fs
-        methods_dict = {"lmm": execute_lmm, "lr": execute_linear_regression, "dual_fs": execute_dual_fs, "fs": execute_fs}
-        
-        for name, method in methods_dict.items():
-            expected_prefix = currentFolder + "/expected/"
-            methods = [method]
-            combine_output = run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner, plot_fn="out.png", seed=42)
-            from fastlmm.util.pickle_io import load
-            co = load("%s%s.bzip" % (expected_prefix, name))
-            
-            compare_nested(combine_output, co)
+        expected_prefix = currentFolder + "/expected/"
+        methods = [method]
+        combine_output = run_simulation(snp_fn, out_prefix, methods, num_causals, num_repeats, num_pcs, description, runner, plot_fn="out.png", seed=42)
+        from fastlmm.util.pickle_io import load
+        filename = "%s%s.bzip" % (expected_prefix, name)
+        co = load(filename)
+        compare_nested(combine_output, co)
 
     def compare(self, gen_snpdata, pheno, output_file):
         assert len(pheno) % 2 == 0 # even number of iids

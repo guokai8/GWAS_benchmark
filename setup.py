@@ -7,16 +7,11 @@ import platform
 import os
 import sys
 import shutil
+from setuptools import setup, Extension 
+import numpy
 
-from distutils.core import setup
-from distutils.extension import Extension
-from distutils.command.clean import clean as Clean
-
-try:
-	import numpy
-except Exception:
-	print "numpy needed for installation, please install numpy first"
-	sys.exit()
+# Version number
+version = '0.1.0'
 
 
 def readme():
@@ -26,7 +21,7 @@ def readme():
 #python setup.py sdist bdist_wininst upload
 setup(
     name='GWAS_benchmark',
-    version='0.1.0',
+    version=version,
     description='GWAS benchmark',
     long_description=readme(),
     keywords='gwas bioinformatics benchmarks',
