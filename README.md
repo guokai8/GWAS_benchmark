@@ -8,7 +8,7 @@ If you use this code, please cite:
 * C. Widmer, C. Lippert, O. Weissbrod, N. Fusi, C. Kadie, R. Davidson, J. Listgarten, and D. Heckerman, Further Improvements to Linear Mixed Models for Genome-Wide Association Studies, _Scientific Reports_ **4**, 6874, Nov 2014 (doi:10.1038/srep06874).
 
 See this website for related software:  
-http://research.microsoft.com/en-us/um/redmond/projects/MicrosoftGenomics/
+http://research.microsoft.com/en-us/um/redmond/projects/MSCompBio/
 
 Our documentation (including live examples) is available as ipython notebook:
 http://nbviewer.ipython.org/github/MicrosoftGenomics/GWAS_benchmark/blob/master/GWAS_benchmark/simulation.ipynb
